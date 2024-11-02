@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="4.0" xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd">
+
+  <display-name>AlexTripAgencyManagementSystem</display-name>
+
+  <!-- LoginServlet -->
+  <servlet>
+    <servlet-name>LoginServlet</servlet-name>
+    <servlet-class>Servlet.LoginServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>LoginServlet</servlet-name>
+    <url-pattern>/login</url-pattern>
+  </servlet-mapping>
+
+  <!-- BookingServlet -->
+  <servlet>
+    <servlet-name>BookingServlet</servlet-name>
+    <servlet-class>Servlet.BookingServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>BookingServlet</servlet-name>
+    <url-pattern>/booking</url-pattern>
+  </servlet-mapping>
+
+  <!-- SignupServlet -->
+  <servlet>
+    <servlet-name>SignupServlet</servlet-name>
+    <servlet-class>Servlet.SignupServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>SignupServlet</servlet-name>
+    <url-pattern>/signup</url-pattern>
+  </servlet-mapping>
+
+  <!-- Welcome, File -->
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
+
+  <!-- Session Timeout (optional) -->
+  <session-config>
+    <session-timeout>30</session-timeout> <!-- in minutes -->
+  </session-config>
+
+</web-app>
