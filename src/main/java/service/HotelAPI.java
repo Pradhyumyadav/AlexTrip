@@ -9,16 +9,30 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.math.RoundingMode;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 public class HotelAPI {
 
     private static final Logger logger = LoggerFactory.getLogger(HotelAPI.class);
     private final String googleApiKey;
+    private final String currencyApiKey;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final HttpClient httpClient;
+
+    // Cache variables for exchange rate and expiration time
+    private BigDecimal cachedUsdToGbpRate = null;
+    private Instant cacheExpirationTime = null;
+    private static final Duration CACHE_DURATION = Duration.ofHours(24);
 
     public HotelAPI() {
         Dotenv dotenv = Dotenv.configure()
@@ -26,133 +40,176 @@ public class HotelAPI {
                 .load();
         this.googleApiKey = Optional.ofNullable(dotenv.get("GOOGLE_API_KEY"))
                 .orElseThrow(() -> new IllegalStateException("GOOGLE_API_KEY not set in .env file."));
+        this.currencyApiKey = Optional.ofNullable(dotenv.get("FREECURRENCYAPI"))
+                .orElseThrow(() -> new IllegalStateException("FREECURRENCYAPI not set in .env file."));
+        this.httpClient = HttpClient.newHttpClient();
     }
 
-    public List<Hotel> fetchHotelsByCity(String cityName, int radius, String sortPrice, String duration, String activityType) {
-        if (cityName == null || cityName.trim().isEmpty()) {
-            logger.error("City name parameter is required.");
-            throw new IllegalArgumentException("City name parameter is required.");
-        }
-
+    public List<Hotel> fetchHotelsByCity(String cityName, int radius, String sortPrice, String duration, String activityType, String priceRange) {
         List<Hotel> hotels = new ArrayList<>();
         String urlString = String.format(
                 "https://maps.googleapis.com/maps/api/place/textsearch/json?query=hotels+in+%s&radius=%d&key=%s",
                 cityName, radius, googleApiKey
         );
 
-        logger.info("Fetching hotels with URL: {}", urlString);
-
         try {
             JsonNode rootNode = fetchJsonFromUrl(urlString);
+            logger.info("API Response: {}", rootNode.toString());
             JsonNode resultsNode = rootNode.path("results");
-            logger.debug("API raw response: {}", rootNode);
 
             if (resultsNode.isMissingNode() || !resultsNode.isArray()) {
-                logger.warn("No results found for the provided city.");
+                logger.warn("No results found for the specified city: {}", cityName);
                 return hotels;
             }
 
+            BigDecimal usdToGbpRate = getCachedUsdToGbpExchangeRate();
+
             for (JsonNode hotelNode : resultsNode) {
-                Hotel hotel = parseHotel(hotelNode);
-                if (matchesActivityType(hotel, activityType)) {
+                Hotel hotel = parseHotel(hotelNode, usdToGbpRate);
+                if (matchesFilters(hotel, activityType, priceRange)) {
                     hotels.add(hotel);
                 }
             }
 
-            // Sort and filter the hotels based on parameters
             sortHotelsByPrice(hotels, sortPrice);
             hotels = filterByDuration(hotels, duration);
-
-            logger.info("Number of hotels after filtering: {}", hotels.size());
-        } catch (IOException e) {
-            logger.error("Error while fetching hotels: ", e);
+        } catch (IOException | InterruptedException e) {
+            logger.error("Error fetching hotels from API: ", e);
+            Thread.currentThread().interrupt();
         }
 
         return hotels;
     }
 
-    private boolean matchesActivityType(Hotel hotel, String activityType) {
-        // Implement logic for filtering hotels by activity type if required
-        return true; // Currently, all hotels are returned
-    }
+    public Hotel fetchHotelDetails(String hotelId) {
+        String urlString = String.format(
+                "https://maps.googleapis.com/maps/api/place/details/json?place_id=%s&key=%s",
+                hotelId, googleApiKey
+        );
 
-    private JsonNode fetchJsonFromUrl(String urlString) throws IOException {
-        HttpURLConnection conn = null;
         try {
-            URL url = new URL(urlString);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
+            JsonNode rootNode = fetchJsonFromUrl(urlString);
+            JsonNode resultNode = rootNode.path("result");
 
-            int responseCode = conn.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                logger.error("Failed to fetch data from URL: {} - HTTP response code: {}", urlString, responseCode);
-                throw new IOException("HTTP error code: " + responseCode);
+            if (resultNode.isMissingNode()) {
+                logger.warn("No details found for hotel ID: {}", hotelId);
+                return null;
             }
 
-            try (Scanner scanner = new Scanner(conn.getInputStream(), StandardCharsets.UTF_8)) {
-                String response = scanner.useDelimiter("\\A").next();
-                return objectMapper.readTree(response);
-            }
-
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+            BigDecimal usdToGbpRate = getCachedUsdToGbpExchangeRate();
+            return parseHotelDetails(resultNode, usdToGbpRate);
+        } catch (IOException | InterruptedException e) {
+            logger.error("Error fetching hotel details from API: ", e);
+            Thread.currentThread().interrupt();
+            return null;
         }
     }
 
-    private Hotel parseHotel(JsonNode hotelNode) {
-        Hotel.Builder hotelBuilder = new Hotel.Builder();
+    private BigDecimal getCachedUsdToGbpExchangeRate() throws IOException, InterruptedException {
+        // Check if the cache is valid
+        if (cachedUsdToGbpRate != null && cacheExpirationTime != null && Instant.now().isBefore(cacheExpirationTime)) {
+            return cachedUsdToGbpRate;
+        }
 
-        hotelBuilder.id(hotelNode.path("place_id").asText())
+        // Fetch a new rate and update the cache
+        String urlString = String.format("https://api.freecurrencyapi.com/v1/latest?apikey=%s&currencies=GBP", currencyApiKey);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(urlString))
+                .header("Accept", "application/json")
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            JsonNode rootNode = objectMapper.readTree(response.body());
+            JsonNode rateNode = rootNode.path("data").path("GBP");
+
+            if (rateNode.isMissingNode()) {
+                throw new IOException("GBP rate is missing in response.");
+            }
+
+            // Update the cache
+            cachedUsdToGbpRate = rateNode.decimalValue();
+            cacheExpirationTime = Instant.now().plus(CACHE_DURATION);
+            return cachedUsdToGbpRate;
+        } else {
+            throw new IOException("Failed to fetch exchange rate from FreeCurrencyAPI. Status code: " + response.statusCode());
+        }
+    }
+
+    private Hotel parseHotel(JsonNode hotelNode, BigDecimal usdToGbpRate) {
+        return createHotelFromNode(hotelNode, usdToGbpRate);
+    }
+
+    private Hotel parseHotelDetails(JsonNode hotelNode, BigDecimal usdToGbpRate) {
+        return createHotelFromNode(hotelNode, usdToGbpRate);
+    }
+
+    private Hotel createHotelFromNode(JsonNode hotelNode, BigDecimal usdToGbpRate) {
+        BigDecimal priceInUsd = BigDecimal.valueOf(hotelNode.path("price_level").asInt(-1) * 50L);
+        BigDecimal priceInGbp = priceInUsd.multiply(usdToGbpRate).setScale(2, RoundingMode.HALF_UP);
+
+        List<String> imageUrls = new ArrayList<>();
+        JsonNode photosNode = hotelNode.path("photos");
+
+        if (photosNode.isArray()) {
+            for (JsonNode photoNode : photosNode) {
+                String photoReference = photoNode.path("photo_reference").asText();
+                if (!photoReference.isEmpty()) {
+                    String photoUrl = String.format(
+                            "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=%s&key=%s",
+                            photoReference, googleApiKey
+                    );
+                    imageUrls.add(photoUrl);
+                }
+            }
+        }
+
+        return new Hotel.Builder()
+                .id(hotelNode.path("place_id").asText())
                 .name(hotelNode.path("name").asText("Hotel Name Not Available"))
                 .location(hotelNode.path("formatted_address").asText("Address Not Available"))
                 .latitude(hotelNode.path("geometry").path("location").path("lat").asDouble())
                 .longitude(hotelNode.path("geometry").path("location").path("lng").asDouble())
                 .rating(hotelNode.path("rating").asDouble(0.0))
                 .numberReviews(hotelNode.path("user_ratings_total").asInt(0))
-                .activityType(getRandomActivityType())
-                .stayDuration(new Random().nextInt(10) + 1); // Mock duration for filtering purposes
-
-        // Set a mock price based on price level (if available)
-        int priceLevel = hotelNode.path("price_level").asInt(2);
-        hotelBuilder.price(new BigDecimal(50 * priceLevel));
-
-        // Fetch photo URLs for the hotel
-        List<String> photoUrls = parseHotelPhotos(hotelNode);
-        hotelBuilder.imageUrls(photoUrls);
-
-        return hotelBuilder.build();
+                .price(priceInGbp)
+                .imageUrls(imageUrls)
+                .description(hotelNode.path("editorial_summary").path("overview").asText("Description Not Available"))
+                .build();
     }
 
-    private List<String> parseHotelPhotos(JsonNode hotelNode) {
-        List<String> photoUrls = new ArrayList<>();
-        if (hotelNode.has("photos")) {
-            for (JsonNode photo : hotelNode.get("photos")) {
-                String photoReference = photo.path("photo_reference").asText(null);
-                if (photoReference != null && !photoReference.isEmpty()) {
-                    String photoUrl = String.format(
-                            "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=%s&key=%s",
-                            photoReference, googleApiKey
-                    );
-                    photoUrls.add(photoUrl);
-                }
-            }
+    private JsonNode fetchJsonFromUrl(String urlString) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(urlString))
+                .header("Accept", "application/json")
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            return objectMapper.readTree(response.body());
         } else {
-            logger.warn("No photos found for hotel: {}", hotelNode.path("name").asText("Unnamed Hotel"));
+            throw new IOException("Unexpected response code: " + response.statusCode());
         }
-        return photoUrls;
     }
 
-    private List<Hotel> filterByDuration(List<Hotel> hotels, String duration) {
-        if (duration == null || duration.trim().isEmpty()) return hotels;
+    private boolean matchesFilters(Hotel hotel, String activityType, String priceRange) {
+        return matchesActivityType(hotel, activityType) && matchesPriceRange(hotel, priceRange);
+    }
 
-        return switch (duration.toLowerCase()) {
-            case "short" -> hotels.stream().filter(hotel -> hotel.getStayDuration() <= 3).toList();
-            case "medium" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 4 && hotel.getStayDuration() <= 7).toList();
-            case "long" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 8).toList();
-            default -> hotels; // Return unfiltered if duration is unrecognized
+    private boolean matchesActivityType(Hotel hotel, String activityType) {
+        return activityType == null || activityType.isEmpty() || hotel.getActivityType().equalsIgnoreCase(activityType);
+    }
+
+    private boolean matchesPriceRange(Hotel hotel, String priceRange) {
+        if (priceRange == null || priceRange.isEmpty()) return true;
+        BigDecimal price = hotel.getPrice();
+        return switch (priceRange.toLowerCase()) {
+            case "low" -> price.compareTo(BigDecimal.valueOf(100)) <= 0;
+            case "medium" -> price.compareTo(BigDecimal.valueOf(100)) > 0 && price.compareTo(BigDecimal.valueOf(500)) <= 0;
+            case "high" -> price.compareTo(BigDecimal.valueOf(500)) > 0;
+            default -> true;
         };
     }
 
@@ -164,8 +221,13 @@ public class HotelAPI {
         }
     }
 
-    private String getRandomActivityType() {
-        String[] activityTypes = {"Leisure", "Business", "Family", "Adventure", "Romantic"};
-        return activityTypes[new Random().nextInt(activityTypes.length)];
+    private List<Hotel> filterByDuration(List<Hotel> hotels, String duration) {
+        if (duration == null || duration.isEmpty()) return hotels;
+        return switch (duration.toLowerCase()) {
+            case "short" -> hotels.stream().filter(hotel -> hotel.getStayDuration() <= 3).toList();
+            case "medium" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 4 && hotel.getStayDuration() <= 7).toList();
+            case "long" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 8).toList();
+            default -> hotels;
+        };
     }
 }

@@ -40,9 +40,15 @@
     <welcome-file>index.jsp</welcome-file>
   </welcome-file-list>
 
-  <!-- Session Timeout (optional) -->
+  <!-- Session Timeout -->
   <session-config>
     <session-timeout>30</session-timeout> <!-- in minutes -->
   </session-config>
+
+  <!-- MIME Type Mapping -->
+  <mime-mapping>
+    <extension>json</extension>
+    <mime-type>application/json</mime-type>
+  </mime-mapping>
 
 </web-app>

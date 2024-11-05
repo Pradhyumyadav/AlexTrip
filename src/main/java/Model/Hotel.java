@@ -17,6 +17,7 @@ public class Hotel {
     private final double rating;
     private final int numberReviews;
     private final BigDecimal price;
+    private BigDecimal convertedPriceGBP; // Field for storing price in GBP
     private final String activityType;
     private final int stayDuration;
     private final List<String> imageUrls;
@@ -32,25 +33,18 @@ public class Hotel {
         this.location = Objects.requireNonNull(builder.location, "Location cannot be null");
         this.latitude = validateLatitude(builder.latitude);
         this.longitude = validateLongitude(builder.longitude);
-        this.countryCode = Objects.requireNonNull(builder.countryCode, "Country code cannot be null");
+        this.countryCode = builder.countryCode != null ? builder.countryCode : "N/A"; // Optional
         this.rating = validateRating(builder.rating);
         this.numberReviews = validateNumberReviews(builder.numberReviews);
         this.price = Objects.requireNonNull(builder.price, "Price cannot be null");
-        this.activityType = Objects.requireNonNull(builder.activityType, "Activity type cannot be null");
+        this.convertedPriceGBP = builder.convertedPriceGBP;
+        this.activityType = builder.activityType != null ? builder.activityType : "General";
         this.stayDuration = validateStayDuration(builder.stayDuration);
-
-        // Default placeholder for imageUrls if empty
-        if (builder.imageUrls == null || builder.imageUrls.isEmpty()) {
-            this.imageUrls = List.of("https://via.placeholder.com/400x300?text=No+Image+Available");
-        } else {
-            this.imageUrls = Collections.unmodifiableList(new ArrayList<>(builder.imageUrls));
-        }
-
-        // Initialize other lists with defensive copies
-        this.reviews = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(builder.reviews, "Reviews list cannot be null")));
-        this.restaurantsNearby = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(builder.restaurantsNearby, "Restaurants list cannot be null")));
-        this.attractionsNearby = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(builder.attractionsNearby, "Attractions list cannot be null")));
-        this.faqs = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(builder.faqs, "FAQs list cannot be null")));
+        this.imageUrls = builder.imageUrls != null ? List.copyOf(builder.imageUrls) : List.of("https://via.placeholder.com/400x300?text=No+Image+Available");
+        this.reviews = List.copyOf(builder.reviews != null ? builder.reviews : new ArrayList<>());
+        this.restaurantsNearby = List.copyOf(builder.restaurantsNearby != null ? builder.restaurantsNearby : new ArrayList<>());
+        this.attractionsNearby = List.copyOf(builder.attractionsNearby != null ? builder.attractionsNearby : new ArrayList<>());
+        this.faqs = List.copyOf(builder.faqs != null ? builder.faqs : new ArrayList<>());
     }
 
     // Validation methods
@@ -89,7 +83,7 @@ public class Hotel {
         return stayDuration;
     }
 
-    // Getters remain unchanged as they were already immutable
+    // Getters
     public String getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
@@ -100,6 +94,7 @@ public class Hotel {
     public double getRating() { return rating; }
     public int getNumberReviews() { return numberReviews; }
     public BigDecimal getPrice() { return price; }
+    public BigDecimal getConvertedPriceGBP() { return convertedPriceGBP; }
     public String getActivityType() { return activityType; }
     public int getStayDuration() { return stayDuration; }
     public List<String> getImageUrls() { return imageUrls; }
@@ -108,25 +103,43 @@ public class Hotel {
     public List<Attraction> getAttractionsNearby() { return attractionsNearby; }
     public List<FAQ> getFaqs() { return faqs; }
 
-    // Builder class (no changes needed)
+    // Setter for converted price in GBP
+    public void setConvertedPriceGBP(BigDecimal convertedPriceGBP) {
+        this.convertedPriceGBP = convertedPriceGBP;
+    }
+
+    // Builder class
     public static class Builder {
-        private String id = "N/A";
-        private String name = "Unnamed Hotel";
-        private String description = "No description available.";
-        private String location = "Unknown location";
-        private double latitude = 0.0;
-        private double longitude = 0.0;
-        private String countryCode = "N/A";
-        private double rating = 0.0;
-        private int numberReviews = 0;
-        private BigDecimal price = BigDecimal.ZERO;
-        private String activityType = "General";
-        private int stayDuration = 1;
-        private List<String> imageUrls = new ArrayList<>();
-        private List<Review> reviews = new ArrayList<>();
-        private List<Restaurant> restaurantsNearby = new ArrayList<>();
-        private List<Attraction> attractionsNearby = new ArrayList<>();
-        private List<FAQ> faqs = new ArrayList<>();
+        private String id;
+        private String name;
+        private String description;
+        private String location;
+        private double latitude;
+        private double longitude;
+        private String countryCode;
+        private double rating;
+        private int numberReviews;
+        private BigDecimal price;
+        private BigDecimal convertedPriceGBP;
+        private String activityType;
+        private int stayDuration;
+        private List<String> imageUrls;
+        private List<Review> reviews;
+        private List<Restaurant> restaurantsNearby;
+        private List<Attraction> attractionsNearby;
+        private List<FAQ> faqs;
+
+        public Builder() {
+            // Set default values for optional fields
+            this.convertedPriceGBP = BigDecimal.ZERO;
+            this.activityType = "General";
+            this.stayDuration = 1;
+            this.imageUrls = new ArrayList<>();
+            this.reviews = new ArrayList<>();
+            this.restaurantsNearby = new ArrayList<>();
+            this.attractionsNearby = new ArrayList<>();
+            this.faqs = new ArrayList<>();
+        }
 
         public Builder id(String id) { this.id = id; return this; }
         public Builder name(String name) { this.name = name; return this; }
@@ -138,9 +151,17 @@ public class Hotel {
         public Builder rating(double rating) { this.rating = rating; return this; }
         public Builder numberReviews(int numberReviews) { this.numberReviews = numberReviews; return this; }
         public Builder price(BigDecimal price) { this.price = price; return this; }
+        public Builder convertedPriceGBP(BigDecimal convertedPriceGBP) { this.convertedPriceGBP = convertedPriceGBP; return this; }
         public Builder activityType(String activityType) { this.activityType = activityType; return this; }
         public Builder stayDuration(int stayDuration) { this.stayDuration = stayDuration; return this; }
         public Builder imageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; return this; }
+        public Builder imageUrl(String imageUrl) {
+            if (this.imageUrls == null) {
+                this.imageUrls = new ArrayList<>();
+            }
+            this.imageUrls.add(imageUrl);
+            return this;
+        }
         public Builder reviews(List<Review> reviews) { this.reviews = reviews; return this; }
         public Builder restaurantsNearby(List<Restaurant> restaurantsNearby) { this.restaurantsNearby = restaurantsNearby; return this; }
         public Builder attractionsNearby(List<Attraction> attractionsNearby) { this.attractionsNearby = attractionsNearby; return this; }

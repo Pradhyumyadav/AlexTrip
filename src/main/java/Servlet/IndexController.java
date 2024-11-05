@@ -1,91 +1,50 @@
 package Servlet;
 
+import Model.Hotel;
+import service.HotelAPI;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet("/index")
 public class IndexController extends HttpServlet {
 
+    private static final Logger LOGGER = Logger.getLogger(IndexController.class.getName());
+    private final HotelAPI hotelAPI;
+
+    public IndexController() {
+        this.hotelAPI = new HotelAPI();
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Retrieve the user's location, using a default if none is provided
-        String userLocation = request.getParameter("userLocation");
-        if (userLocation == null || userLocation.trim().isEmpty()) {
-            userLocation = "Default Location";
+        String city = request.getParameter("city");
+        List<Hotel> hotels;
+
+        try {
+            if (city == null || city.isEmpty()) {
+                // Default to Coventry, UK if no city is provided
+                city = "Coventry, UK";
+            }
+            hotels = hotelAPI.fetchHotelsByCity(city, 5000, null, null, null, null);
+
+            // Set hotels as an attribute to be accessed in index.jsp
+            request.setAttribute("popularHotels", hotels);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error fetching hotels for city: " + city, e);
+            request.setAttribute("errorMessage", "An error occurred while fetching hotels. Showing popular destinations in Coventry.");
+            hotels = hotelAPI.fetchHotelsByCity("Coventry, UK", 5000, null, null, null, null);
+            request.setAttribute("popularHotels", hotels);
         }
 
-        // Generate the list of popular destinations around the user's location
-        List<Destination> popularDestinations = getPopularDestinationsAround(userLocation);
-
-        // Ensure that the popularDestinations list is not null
-        if (popularDestinations == null) {
-            popularDestinations = new ArrayList<>(); // Safeguard against null list
-        }
-
-        // Setting attributes in request
-        request.setAttribute("popularDestinations", popularDestinations);
-        request.setAttribute("userLocation", userLocation);
-
-        // Forward request to index.jsp
+        // Forward to index.jsp with the hotels list for server-side rendering
         request.getRequestDispatcher("/index.jsp").forward(request, response);
-    }
-
-    /**
-     * This method simulates fetching popular destinations based on the user's location.
-     *
-     * @param location User's location to customize the destinations shown.
-     * @return A list of Destination objects around the specified location.
-     */
-    private List<Destination> getPopularDestinationsAround(String location) {
-        List<Destination> destinations = new ArrayList<>();
-
-        // Populate destinations based on the user's location
-        switch (location.toLowerCase()) {
-            case "paris":
-                destinations.add(new Destination("Versailles", "Famous for its palace", "/images/versailles.jpg"));
-                destinations.add(new Destination("Lyon", "A city known for its cuisine", "/images/lyon.jpg"));
-                break;
-            case "new york":
-                destinations.add(new Destination("Brooklyn", "Known for the Brooklyn Bridge", "/images/brooklyn.jpg"));
-                destinations.add(new Destination("Boston", "Historical city with great universities", "/images/boston.jpg"));
-                break;
-            default:
-                destinations.add(new Destination("Paris", "The city of light", "/images/paris.jpg"));
-                destinations.add(new Destination("New York", "The city that never sleeps", "/images/nyc.jpg"));
-                destinations.add(new Destination("Tokyo", "Land of the rising sun", "/images/tokyo.jpg"));
-                break;
-        }
-
-        // Return the populated list of destinations
-        return destinations;
-    }
-
-    /**
-     * Inner static class representing a destination.
-     */
-    public static class Destination {
-        private final String name;
-        private final String description;
-        private final String imageUrl;
-
-        /**
-         * Constructor with null safety checks for each field.
-         */
-        public Destination(String name, String description, String imageUrl) {
-            this.name = name != null && !name.isEmpty() ? name : "Unknown Destination";
-            this.description = description != null && !description.isEmpty() ? description : "No description available.";
-            this.imageUrl = imageUrl != null && !imageUrl.isEmpty() ? imageUrl : "/images/placeholder.jpg";
-        }
-
-        // Getters for JSP access
-        public String getName() { return name; }
-        public String getDescription() { return description; }
-        public String getImageUrl() { return imageUrl; }
     }
 }
