@@ -51,13 +51,10 @@ public class ListingController extends HttpServlet {
 
             // Fetch hotels based on parameters
             List<Hotel> hotels = hotelAPI.fetchHotelsByCity(cityName, radius, sortPrice, duration, activityType, priceRange);
+            req.setAttribute("hotels", hotels); // Always set hotels
 
-            // Set attributes for JSP
-            req.setAttribute("cityName", cityName);
-            req.setAttribute("hotels", hotels != null ? hotels : Collections.emptyList());
-
-            // Log result count and any issues with data retrieval
-            if (hotels == null || hotels.isEmpty()) {
+            // Log result count and handle cases where no hotels are found
+            if (hotels.isEmpty()) {
                 req.setAttribute("errorMessage", "No hotels found matching the specified criteria.");
                 logger.warn("No hotels found for the given parameters.");
             } else {
@@ -80,7 +77,7 @@ public class ListingController extends HttpServlet {
 
     private void forwardErrorMessage(HttpServletRequest req, HttpServletResponse resp, String message) throws ServletException, IOException {
         req.setAttribute("errorMessage", message);
-        req.setAttribute("hotels", Collections.emptyList()); // Empty list to avoid null issues in JSP
+        req.setAttribute("hotels", Collections.emptyList()); // Ensure an empty list for safety
         forwardToJSP(req, resp);
     }
 

@@ -84,30 +84,32 @@
 
 <div class="container my-5">
   <header class="text-center mb-5">
-    <h1 class="display-4 mb-3">Explore Stays in <c:out value="${cityName}"/></h1>
+    <h1 class="display-4 mb-3">Explore Stays in <c:out value="${param.city}"/></h1>
   </header>
 
   <c:choose>
     <c:when test="${not empty hotels}">
       <div class="hotel-listing">
+        <jsp:useBean id="hotels" scope="request" type="java.util.List"/>
         <c:forEach var="hotel" items="${hotels}">
-          <!-- Use /hotel/details servlet to load hotel details -->
-          <a href="${pageContext.request.contextPath}/hotel/details?hotelId=${hotel.id}" class="hotel-card">
+          <a href="${pageContext.request.contextPath}/hotel/details?hotelId=${hotel.place_id}" class="hotel-card">
             <div class="hotel-img-wrapper">
               <c:choose>
-                <c:when test="${not empty hotel.imageUrls[0]}">
-                  <img src="${fn:escapeXml(hotel.imageUrls[0])}" alt="View of ${fn:escapeXml(hotel.name)}" class="hotel-img" loading="lazy">
+                <c:when test="${not empty hotel.photos}">
+                  <c:if test="${not empty hotel.photos[0].photo_reference}">
+                    <img src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${hotel.photos[0].photo_reference}&key=YOUR_GOOGLE_API_KEY" alt="View of ${fn:escapeXml(hotel.name)}" class="hotel-img" loading="lazy">
+                  </c:if>
                 </c:when>
                 <c:otherwise>
-                  No Image Available
+                  <span>No Image Available</span>
                 </c:otherwise>
               </c:choose>
             </div>
             <div class="hotel-info">
               <h2 class="hotel-name">${fn:escapeXml(hotel.name)}</h2>
-              <p class="hotel-location">${fn:escapeXml(hotel.location)}</p>
+              <p class="hotel-location">${fn:escapeXml(hotel.formatted_address)}</p>
               <p class="hotel-price">£<fmt:formatNumber value="${hotel.price}" minFractionDigits="2" maxFractionDigits="2"/></p>
-              <p><strong>Activity Type:</strong> ${fn:escapeXml(hotel.activityType)}</p>
+              <p><strong>Activity Type:</strong> <c:out value="${hotel.activityType != null && !hotel.activityType.isEmpty() ? hotel.activityType : 'Not specified'}"/></p>
             </div>
           </a>
         </c:forEach>

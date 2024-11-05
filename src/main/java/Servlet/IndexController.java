@@ -29,22 +29,29 @@ public class IndexController extends HttpServlet {
         List<Hotel> hotels;
 
         try {
+            // Check if city is provided; if not, use default value
             if (city == null || city.isEmpty()) {
-                // Default to Coventry, UK if no city is provided
                 city = "Coventry, UK";
             }
+            // Fetch hotels based on city
             hotels = hotelAPI.fetchHotelsByCity(city, 5000, null, null, null, null);
 
-            // Set hotels as an attribute to be accessed in index.jsp
+            // Set the list of hotels in the request scope
             request.setAttribute("popularHotels", hotels);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error fetching hotels for city: " + city, e);
+
+            // Set an error message if fetching hotels fails and provide default hotels for Coventry
             request.setAttribute("errorMessage", "An error occurred while fetching hotels. Showing popular destinations in Coventry.");
             hotels = hotelAPI.fetchHotelsByCity("Coventry, UK", 5000, null, null, null, null);
             request.setAttribute("popularHotels", hotels);
         }
 
-        // Forward to index.jsp with the hotels list for server-side rendering
+        // Define and set predefined activity types list for display in the dropdown
+        List<String> activityTypes = List.of("lodging", "hotel", "motel", "bed_and_breakfast", "hostel", "resort", "guest_house", "rv_park", "campground");
+        request.setAttribute("activityTypes", activityTypes);
+
+        // Forward to index.jsp with hotels and activity types data
         request.getRequestDispatcher("/index.jsp").forward(request, response);
     }
 }

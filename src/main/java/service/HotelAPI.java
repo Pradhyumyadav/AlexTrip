@@ -14,8 +14,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -81,37 +81,36 @@ public class HotelAPI {
         return hotels;
     }
 
-    public Hotel fetchHotelDetails(String hotelId) {
-        String urlString = String.format(
-                "https://maps.googleapis.com/maps/api/place/details/json?place_id=%s&key=%s",
-                hotelId, googleApiKey
-        );
+    private JsonNode fetchJsonFromUrl(String urlString) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(urlString))
+                .header("Accept", "application/json")
+                .build();
 
-        try {
-            JsonNode rootNode = fetchJsonFromUrl(urlString);
-            JsonNode resultNode = rootNode.path("result");
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (resultNode.isMissingNode()) {
-                logger.warn("No details found for hotel ID: {}", hotelId);
-                return null;
-            }
-
-            BigDecimal usdToGbpRate = getCachedUsdToGbpExchangeRate();
-            return parseHotelDetails(resultNode, usdToGbpRate);
-        } catch (IOException | InterruptedException e) {
-            logger.error("Error fetching hotel details from API: ", e);
-            Thread.currentThread().interrupt();
-            return null;
+        if (response.statusCode() == 200) {
+            return objectMapper.readTree(response.body());
+        } else {
+            throw new IOException("Unexpected response code: " + response.statusCode());
         }
     }
 
+    private List<Hotel> filterByDuration(List<Hotel> hotels, String duration) {
+        if (duration == null || duration.isEmpty()) return hotels;
+        return switch (duration.toLowerCase()) {
+            case "short" -> hotels.stream().filter(hotel -> hotel.getStayDuration() <= 3).toList();
+            case "medium" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 4 && hotel.getStayDuration() <= 7).toList();
+            case "long" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 8).toList();
+            default -> hotels;
+        };
+    }
+
     private BigDecimal getCachedUsdToGbpExchangeRate() throws IOException, InterruptedException {
-        // Check if the cache is valid
         if (cachedUsdToGbpRate != null && cacheExpirationTime != null && Instant.now().isBefore(cacheExpirationTime)) {
             return cachedUsdToGbpRate;
         }
 
-        // Fetch a new rate and update the cache
         String urlString = String.format("https://api.freecurrencyapi.com/v1/latest?apikey=%s&currencies=GBP", currencyApiKey);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(urlString))
@@ -128,7 +127,6 @@ public class HotelAPI {
                 throw new IOException("GBP rate is missing in response.");
             }
 
-            // Update the cache
             cachedUsdToGbpRate = rateNode.decimalValue();
             cacheExpirationTime = Instant.now().plus(CACHE_DURATION);
             return cachedUsdToGbpRate;
@@ -138,10 +136,6 @@ public class HotelAPI {
     }
 
     private Hotel parseHotel(JsonNode hotelNode, BigDecimal usdToGbpRate) {
-        return createHotelFromNode(hotelNode, usdToGbpRate);
-    }
-
-    private Hotel parseHotelDetails(JsonNode hotelNode, BigDecimal usdToGbpRate) {
         return createHotelFromNode(hotelNode, usdToGbpRate);
     }
 
@@ -179,21 +173,6 @@ public class HotelAPI {
                 .build();
     }
 
-    private JsonNode fetchJsonFromUrl(String urlString) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(urlString))
-                .header("Accept", "application/json")
-                .build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() == 200) {
-            return objectMapper.readTree(response.body());
-        } else {
-            throw new IOException("Unexpected response code: " + response.statusCode());
-        }
-    }
-
     private boolean matchesFilters(Hotel hotel, String activityType, String priceRange) {
         return matchesActivityType(hotel, activityType) && matchesPriceRange(hotel, priceRange);
     }
@@ -213,21 +192,40 @@ public class HotelAPI {
         };
     }
 
+    public List<String> fetchActivityTypes() {
+        // Using predefined list of hotel-related place types as per Google Places API documentation.
+        return List.of("lodging", "hotel", "motel", "bed_and_breakfast", "hostel", "resort", "guest_house", "rv_park", "campground");
+    }
+
+    public Hotel fetchHotelDetails(String hotelId) {
+        String urlString = String.format(
+                "https://maps.googleapis.com/maps/api/place/details/json?place_id=%s&key=%s",
+                hotelId, googleApiKey
+        );
+
+        try {
+            JsonNode rootNode = fetchJsonFromUrl(urlString);
+            JsonNode resultNode = rootNode.path("result");
+
+            if (resultNode.isMissingNode()) {
+                logger.warn("No details found for hotel ID: {}", hotelId);
+                return null;
+            }
+
+            BigDecimal usdToGbpRate = getCachedUsdToGbpExchangeRate();
+            return parseHotel(resultNode, usdToGbpRate);
+        } catch (IOException | InterruptedException e) {
+            logger.error("Error fetching hotel details from API: ", e);
+            Thread.currentThread().interrupt();
+            return null;
+        }
+    }
+
     private void sortHotelsByPrice(List<Hotel> hotels, String sortPrice) {
         if ("lowToHigh".equalsIgnoreCase(sortPrice)) {
             hotels.sort(Comparator.comparing(Hotel::getPrice));
         } else if ("highToLow".equalsIgnoreCase(sortPrice)) {
             hotels.sort(Comparator.comparing(Hotel::getPrice).reversed());
         }
-    }
-
-    private List<Hotel> filterByDuration(List<Hotel> hotels, String duration) {
-        if (duration == null || duration.isEmpty()) return hotels;
-        return switch (duration.toLowerCase()) {
-            case "short" -> hotels.stream().filter(hotel -> hotel.getStayDuration() <= 3).toList();
-            case "medium" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 4 && hotel.getStayDuration() <= 7).toList();
-            case "long" -> hotels.stream().filter(hotel -> hotel.getStayDuration() >= 8).toList();
-            default -> hotels;
-        };
     }
 }

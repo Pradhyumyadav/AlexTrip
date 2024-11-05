@@ -1,7 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -58,55 +57,63 @@
 <div class="hero">
     <div class="search-panel">
         <h1 class="mb-4 text-center">Discover Your Next Stay</h1>
-        <form id="searchForm" action="${pageContext.request.contextPath}/listings" method="GET" class="row g-3">
+        <form id="searchForm" action="<%= request.getContextPath() %>/listings" method="GET" class="row g-3">
             <div class="col-md-4">
                 <label for="city" class="form-label">City</label>
-                <input type="text" name="city" id="city" class="form-control" placeholder="Enter a city" value="${param.city != null ? param.city : ''}" required>
+                <input type="text" name="city" id="city" class="form-control" placeholder="Enter a city"
+                       value="${param.city != null ? param.city : ''}" required>
             </div>
             <div class="col-md-4">
                 <label for="activityType" class="form-label">Activity Type</label>
                 <select name="activityType" id="activityType" class="form-select">
                     <option value="">Any</option>
-                    <option value="business">Business</option>
-                    <option value="family">Family</option>
-                    <option value="adventure">Adventure</option>
-                    <option value="relaxation">Relaxation</option>
-                    <option value="romantic">Romantic</option>
-                    <option value="leisure">Leisure</option>
+                    <c:forEach var="type" items="${activityTypes != null ? activityTypes : []}">
+                        <option value="${type}" ${param.activityType == type ? 'selected' : ''}>${type}</option>
+                    </c:forEach>
                 </select>
             </div>
             <div class="col-md-4">
                 <label for="duration" class="form-label">Duration (Days)</label>
                 <select name="duration" id="duration" class="form-select">
                     <option value="">Any</option>
-                    <option value="1-3">1-3 days</option>
-                    <option value="4-7">4-7 days</option>
-                    <option value="8-14">8-14 days</option>
-                    <option value="15+">15+ days</option>
+                    <option value="1-3" ${param.duration == '1-3' ? 'selected' : ''}>1-3 days</option>
+                    <option value="4-7" ${param.duration == '4-7' ? 'selected' : ''}>4-7 days</option>
+                    <option value="8-14" ${param.duration == '8-14' ? 'selected' : ''}>8-14 days</option>
+                    <option value="15+" ${param.duration == '15+' ? 'selected' : ''}>15+ days</option>
                 </select>
             </div>
             <div class="col-md-4">
                 <label for="priceRange" class="form-label">Price Range (£)</label>
                 <select name="priceRange" id="priceRange" class="form-select">
                     <option value="">Any</option>
-                    <option value="0-100">£0 - £100</option>
-                    <option value="100-500">£100 - £500</option>
-                    <option value="500-1000">£500 - £1000</option>
-                    <option value="1000+">£1000+</option>
+                    <option value="0-100" ${param.priceRange == '0-100' ? 'selected' : ''}>£0 - £100</option>
+                    <option value="100-500" ${param.priceRange == '100-500' ? 'selected' : ''}>£100 - £500</option>
+                    <option value="500-1000" ${param.priceRange == '500-1000' ? 'selected' : ''}>£500 - £1000</option>
+                    <option value="1000+" ${param.priceRange == '1000+' ? 'selected' : ''}>£1000+</option>
                 </select>
+            </div>
+            <div class="col-md-4">
+                <label for="radius" class="form-label">Search Radius (km)</label>
+                <input type="number" name="radius" id="radius" class="form-control" placeholder="Enter radius"
+                       value="${param.radius != null ? param.radius : ''}" min="1" required>
             </div>
             <div class="col-md-4">
                 <label for="sortPrice" class="form-label">Sort by Price</label>
                 <select name="sortPrice" id="sortPrice" class="form-select">
                     <option value="">Select</option>
-                    <option value="low-high">Low to High</option>
-                    <option value="high-low">High to Low</option>
+                    <option value="low-high" ${param.sortPrice == 'low-high' ? 'selected' : ''}>Low to High</option>
+                    <option value="high-low" ${param.sortPrice == 'high-low' ? 'selected' : ''}>High to Low</option>
                 </select>
             </div>
             <div class="col-12 text-center mt-3">
                 <button type="submit" class="btn btn-primary">Search Hotels</button>
             </div>
         </form>
+        <c:if test="${not empty param.error}">
+            <div class="alert alert-danger mt-3" role="alert">
+                    ${param.error}
+            </div>
+        </c:if>
     </div>
 </div>
 
