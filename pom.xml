@@ -9,25 +9,16 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>war</packaging>
 
-  <name>AlexTripAgencyManagementSystem Maven Webapp</name>
-  <url>https://www.example.com</url> <!-- FIXME change it to the project's website -->
+  <name>AlexTripAgencyManagementSystem</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>8</maven.compiler.source>
-    <maven.compiler.target>8</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
   </properties>
 
   <dependencies>
-    <!-- JUnit dependency for testing -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.1</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Servlet API dependency -->
+    <!-- Servlet API -->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
@@ -35,7 +26,7 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- JSP API dependency -->
+    <!-- JSP API -->
     <dependency>
       <groupId>javax.servlet.jsp</groupId>
       <artifactId>javax.servlet.jsp-api</artifactId>
@@ -43,94 +34,69 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- JSTL dependency -->
-    <!-- https://mvnrepository.com/artifact/javax.servlet/jstl -->
+    <!-- JSTL -->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>jstl</artifactId>
       <version>1.2</version>
     </dependency>
-    <!-- SLF4J API -->
+
+    <!-- Gson for JSON handling -->
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.30</version>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.11.0</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.5.11</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.amadeus</groupId>
-      <artifactId>amadeus-java</artifactId>
-      <version>10.0.0</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.18.0</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/com.google.firebase/firebase-admin -->
+
+    <!-- Firebase Admin SDK -->
     <dependency>
       <groupId>com.google.firebase</groupId>
       <artifactId>firebase-admin</artifactId>
       <version>9.4.1</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
+
+    <!-- Jackson Databind for JSON parsing -->
     <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>okhttp</artifactId>
-      <version>5.0.0-alpha.14</version>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.2</version>
     </dependency>
+
+    <!-- dotenv-java for environment variable management -->
+    <dependency>
+      <groupId>io.github.cdimascio</groupId>
+      <artifactId>dotenv-java</artifactId>
+      <version>3.0.2</version>
+    </dependency>
+
+    <!-- SLF4J API -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.32</version>
+      <version>2.1.0-alpha1</version>
     </dependency>
+
+    <!-- SLF4J Simple -->
     <dependency>
-      <groupId>io.github.cdimascio</groupId>
-      <artifactId>java-dotenv</artifactId>
-      <version>5.2.2</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>2.1.0-alpha1</version>
     </dependency>
+
   </dependencies>
 
   <build>
     <finalName>AlexTripAgencyManagementSystem</finalName>
-    <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (perhaps moved to parent pom) -->
-      <plugins>
-        <plugin>
-          <artifactId>maven-clean-plugin</artifactId>
-          <version>3.4.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.13.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.3.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-war-plugin</artifactId>
-          <version>3.4.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.2</version>
-        </plugin>
-      </plugins>
-    </pluginManagement><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><configuration><source>16</source><target>16</target><compilerArgs>--enable-preview</compilerArgs></configuration></plugin></plugins>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <configuration>
+          <source>17</source>
+          <target>17</target>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

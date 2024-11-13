@@ -1,11 +1,8 @@
 package Servlet;
 
 import Model.Hotel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import service.HotelAPI;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -14,21 +11,29 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet("/listings")
 public class ListingController extends HttpServlet {
 
-    private static final Logger logger = LoggerFactory.getLogger(ListingController.class);
-    private final HotelAPI hotelAPI;
+    private static final Logger LOGGER = Logger.getLogger(ListingController.class.getName());
+    private HotelAPI hotelAPI;
 
-    public ListingController() {
-        this.hotelAPI = new HotelAPI();
+    @Override
+    public void init() throws ServletException {
+        try {
+            this.hotelAPI = new HotelAPI();  // Ensure HotelAPI is correctly initialized
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize HotelAPI: " + e.getMessage(), e);
+            throw new ServletException("Initialization error in ListingController: " + e.getMessage(), e);
+        }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
-            // Retrieve and sanitize parameters
+            // Getting and sanitizing input from the user
             String cityName = sanitizeInput(req.getParameter("city"));
             String radiusStr = sanitizeInput(req.getParameter("radius"));
             String activityType = sanitizeInput(req.getParameter("activityType"));
@@ -36,71 +41,60 @@ public class ListingController extends HttpServlet {
             String duration = sanitizeInput(req.getParameter("duration"));
             String priceRange = sanitizeInput(req.getParameter("priceRange"));
 
-            // Log the parameters for debugging
-            logger.info("Received parameters - City: {}, Radius: {}, ActivityType: {}, SortPrice: {}, Duration: {}, PriceRange: {}",
-                    cityName, radiusStr, activityType, sortPrice, duration, priceRange);
+            LOGGER.info(String.format("Received parameters - City: %s, Radius: %s, ActivityType: %s, SortPrice: %s, Duration: %s, PriceRange: %s",
+                    cityName, radiusStr, activityType, sortPrice, duration, priceRange));
 
-            // Validate required parameters
-            if (isNullOrEmpty(cityName)) {
+            if (cityName.isEmpty()) {
                 forwardErrorMessage(req, resp, "City name is required to search for hotels.");
                 return;
             }
 
-            // Parse radius, default to 5000 if invalid
             int radius = parseInteger(radiusStr);
 
-            // Fetch hotels based on parameters
+            // Call HotelAPI to fetch the hotels
             List<Hotel> hotels = hotelAPI.fetchHotelsByCity(cityName, radius, sortPrice, duration, activityType, priceRange);
-            req.setAttribute("hotels", hotels); // Always set hotels
 
-            // Log result count and handle cases where no hotels are found
-            if (hotels.isEmpty()) {
+            // Set hotels to the request attribute to be used in JSP
+            req.setAttribute("hotels", hotels != null ? hotels : Collections.emptyList());
+
+            if (hotels == null || hotels.isEmpty()) {
                 req.setAttribute("errorMessage", "No hotels found matching the specified criteria.");
-                logger.warn("No hotels found for the given parameters.");
+                LOGGER.warning("No hotels found for the given parameters.");
             } else {
-                logger.info("Fetched {} hotels for city: {}", hotels.size(), cityName);
+                LOGGER.info(String.format("Fetched %d hotels for city: %s", hotels.size(), cityName));
             }
 
-            // Forward to listings.jsp
+            // Forward to JSP page to display hotels
             forwardToJSP(req, resp);
 
         } catch (Exception e) {
-            logger.error("Error while fetching hotels", e);
+            LOGGER.log(Level.SEVERE, "Error while fetching hotels", e);
             forwardErrorMessage(req, resp, "An unexpected error occurred while processing your request. Please try again later.");
         }
     }
 
     private void forwardToJSP(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        RequestDispatcher dispatcher = req.getRequestDispatcher("/WEB-INF/views/listings.jsp");
-        dispatcher.forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/listings.jsp").forward(req, resp);
     }
 
     private void forwardErrorMessage(HttpServletRequest req, HttpServletResponse resp, String message) throws ServletException, IOException {
         req.setAttribute("errorMessage", message);
-        req.setAttribute("hotels", Collections.emptyList()); // Ensure an empty list for safety
+        req.setAttribute("hotels", Collections.emptyList());  // In case of error, return an empty list
         forwardToJSP(req, resp);
     }
 
     private String sanitizeInput(String input) {
-        return input == null ? "" : input.replaceAll("[^a-zA-Z0-9\\s-]", "").trim();
-    }
-
-    private boolean isNullOrEmpty(String str) {
-        return str == null || str.trim().isEmpty();
+        // Sanitize input to avoid SQL injection or other issues
+        return input == null ? "" : input.trim().replaceAll("[^a-zA-Z0-9\\s-]", "");
     }
 
     private int parseInteger(String value) {
-        final int defaultRadius = 5000; // Define a constant for clarity
-
-        if (isNullOrEmpty(value)) {
-            logger.warn("Radius parameter is missing or empty. Using default radius: {}", defaultRadius);
-            return defaultRadius;
-        }
+        // Handle case where radius is not a valid integer
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            logger.warn("Invalid integer format for radius: {}. Using default radius: {}", value, defaultRadius);
-            return defaultRadius;
+            LOGGER.warning("Invalid integer format for radius: " + value + ". Using default radius: 5000");
+            return 5000; // Default radius
         }
     }
 }

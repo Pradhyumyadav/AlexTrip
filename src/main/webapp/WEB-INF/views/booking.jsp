@@ -21,8 +21,8 @@
     }
 
     String url = "jdbc:postgresql://localhost:5432/AlexTrip";
-    String dbUser = "your_database_user";
-    String dbPassword = "your_database_password";
+    String dbUser = "postgres";
+    String dbPassword = "123";
 
     String sql = "INSERT INTO bookings (hotel_id, user_id, checkin_date, checkout_date, customer_name, " +
             "customer_email, customer_phone, room_type, total_price, booking_date) " +

@@ -17,36 +17,37 @@ import java.io.IOException;
 public class HotelDetailsController extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(HotelDetailsController.class);
-    private final HotelAPI hotelAPI;
+    private HotelAPI hotelAPI;
 
-    public HotelDetailsController() {
-        this.hotelAPI = new HotelAPI();
+    @Override
+    public void init() throws ServletException {
+        try {
+            hotelAPI = new HotelAPI(); // Ensures that HotelAPI is initialized safely
+        } catch (Exception e) {
+            logger.error("Initialization of HotelAPI failed.", e);
+            throw new ServletException("Failed to initialize HotelDetailsController due to HotelAPI initialization failure.", e);
+        }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String hotelId = req.getParameter("hotelId");
 
-        if (hotelId == null || hotelId.isEmpty()) {
+        if (hotelId == null || hotelId.trim().isEmpty()) {
             logger.warn("Hotel ID is missing in the request.");
             forwardErrorMessage(req, resp, "Invalid hotel ID provided. Please select a valid hotel.");
             return;
         }
 
         try {
-            // Fetch hotel details using the hotel ID
             Hotel hotel = hotelAPI.fetchHotelDetails(hotelId);
-
             if (hotel == null) {
                 logger.warn("No details found for hotel ID: {}", hotelId);
-                req.setAttribute("errorMessage", "Hotel not found.");
+                forwardErrorMessage(req, resp, "Hotel not found.");
             } else {
-                // Set hotel details as a request attribute
                 req.setAttribute("hotel", hotel);
+                forwardToJSP(req, resp);
             }
-
-            forwardToJSP(req, resp);
-
         } catch (Exception e) {
             logger.error("Error retrieving hotel details for hotel ID: {}", hotelId, e);
             forwardErrorMessage(req, resp, "An unexpected error occurred while retrieving hotel details. Please try again later.");
@@ -54,14 +55,13 @@ public class HotelDetailsController extends HttpServlet {
     }
 
     private void forwardToJSP(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String path = "/WEB-INF/views/hoteldetails.jsp";  // Ensure this path is correct
+        String path = "/WEB-INF/views/HotelDetails.jsp"; // Ensure the filename matches
         RequestDispatcher dispatcher = req.getRequestDispatcher(path);
-
         if (dispatcher != null) {
             dispatcher.forward(req, resp);
         } else {
             logger.error("RequestDispatcher could not be created for path: {}", path);
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not load hotel details page.");
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not load the hotel details page.");
         }
     }
 
