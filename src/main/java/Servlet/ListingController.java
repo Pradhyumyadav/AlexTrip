@@ -23,7 +23,7 @@ public class ListingController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            this.hotelAPI = new HotelAPI();  // Ensure HotelAPI is correctly initialized
+            this.hotelAPI = new HotelAPI();  // Initialize HotelAPI
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize HotelAPI: " + e.getMessage(), e);
             throw new ServletException("Initialization error in ListingController: " + e.getMessage(), e);
@@ -33,7 +33,7 @@ public class ListingController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
-            // Getting and sanitizing input from the user
+            // Get and sanitize user input
             String cityName = sanitizeInput(req.getParameter("city"));
             String radiusStr = sanitizeInput(req.getParameter("radius"));
             String activityType = sanitizeInput(req.getParameter("activityType"));
@@ -44,6 +44,7 @@ public class ListingController extends HttpServlet {
             LOGGER.info(String.format("Received parameters - City: %s, Radius: %s, ActivityType: %s, SortPrice: %s, Duration: %s, PriceRange: %s",
                     cityName, radiusStr, activityType, sortPrice, duration, priceRange));
 
+            // Check if cityName is provided
             if (cityName.isEmpty()) {
                 forwardErrorMessage(req, resp, "City name is required to search for hotels.");
                 return;
@@ -51,10 +52,10 @@ public class ListingController extends HttpServlet {
 
             int radius = parseInteger(radiusStr);
 
-            // Call HotelAPI to fetch the hotels
+            // Fetch hotels based on city from HotelAPI
             List<Hotel> hotels = hotelAPI.fetchHotelsByCity(cityName, radius, sortPrice, duration, activityType, priceRange);
 
-            // Set hotels to the request attribute to be used in JSP
+            // Set hotels attribute for JSP
             req.setAttribute("hotels", hotels != null ? hotels : Collections.emptyList());
 
             if (hotels == null || hotels.isEmpty()) {
@@ -79,7 +80,7 @@ public class ListingController extends HttpServlet {
 
     private void forwardErrorMessage(HttpServletRequest req, HttpServletResponse resp, String message) throws ServletException, IOException {
         req.setAttribute("errorMessage", message);
-        req.setAttribute("hotels", Collections.emptyList());  // In case of error, return an empty list
+        req.setAttribute("hotels", Collections.emptyList());  // Return an empty list in case of error
         forwardToJSP(req, resp);
     }
 

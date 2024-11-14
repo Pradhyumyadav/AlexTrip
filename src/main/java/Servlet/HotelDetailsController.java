@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebServlet("/hotel/details")
+@WebServlet("/hotelDetails")
 public class HotelDetailsController extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(HotelDetailsController.class);
@@ -55,12 +55,11 @@ public class HotelDetailsController extends HttpServlet {
     }
 
     private void forwardToJSP(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String path = "/WEB-INF/views/HotelDetails.jsp"; // Ensure the filename matches
-        RequestDispatcher dispatcher = req.getRequestDispatcher(path);
+        RequestDispatcher dispatcher = req.getRequestDispatcher("/WEB-INF/views/hoteldetails.jsp");
         if (dispatcher != null) {
             dispatcher.forward(req, resp);
         } else {
-            logger.error("RequestDispatcher could not be created for path: {}", path);
+            logger.error("RequestDispatcher could not be created for path: /WEB-INF/views/hoteldetails.jsp");
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not load the hotel details page.");
         }
     }

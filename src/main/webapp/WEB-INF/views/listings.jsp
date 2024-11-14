@@ -6,13 +6,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Head content remains the same -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AlexTrip - Discover Your Next Stay</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    /* Your CSS styles here */
     :root {
       --primary-color: #FF5A5F;
       --primary-hover: #ff787c;
@@ -80,10 +78,24 @@
 
 <!-- Header with Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-  <!-- Navbar content remains the same -->
   <div class="container">
     <a class="navbar-brand" href="${pageContext.request.contextPath}/">AlexTrip</a>
-    <!-- Rest of your navbar code -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="${pageContext.request.contextPath}/admin">Admin Panel</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="${pageContext.request.contextPath}/login">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="${pageContext.request.contextPath}/signup">Sign Up</a>
+        </li>
+      </ul>
+    </div>
   </div>
 </nav>
 
@@ -96,9 +108,37 @@
         <label for="city" class="form-label">City</label>
         <input type="text" name="city" id="city" class="form-control" placeholder="Enter a city" value="${param.city}" required>
       </div>
-      <!-- Add other search parameters if needed -->
-      <div class="col-12 text-center mt-3">
-        <button type="submit" class="btn btn-primary">Search Hotels</button>
+      <div class="col-md-4">
+        <label for="checkInDate" class="form-label">Check-in Date</label>
+        <input type="date" id="checkInDate" name="checkIn" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label for="checkOutDate" class="form-label">Check-out Date</label>
+        <input type="date" id="checkOutDate" name="checkOut" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label for="guests" class="form-label">Guests</label>
+        <input type="number" id="guests" name="guests" class="form-control" min="1" required>
+      </div>
+      <div class="col-md-3">
+        <label for="activityType" class="form-label">Activity Type</label>
+        <select id="activityType" name="activityType" class="form-control">
+          <option value="">Any</option>
+          <option value="leisure">Leisure</option>
+          <option value="business">Business</option>
+          <option value="adventure">Adventure</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="sortPrice" class="form-label">Sort by Price</label>
+        <select id="sortPrice" name="sortPrice" class="form-control">
+          <option value="">Any</option>
+          <option value="asc">Low to High</option>
+          <option value="desc">High to Low</option>
+        </select>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Search Hotels</button>
       </div>
     </form>
   </div>
@@ -130,25 +170,16 @@
       </div>
     </c:when>
     <c:otherwise>
-      <!-- Display popular stays using JavaScript if no search results -->
       <h2 class="text-center mb-4" id="popularStaysHeader">Popular Stays</h2>
-      <div id="errorMessage" class="error-message"></div>
+      <div id="errorMessage" class="error-message">No search results found.</div>
       <div class="hotel-listing" id="popularStays">
-        <!-- Hotel cards will be dynamically injected here -->
+        <!-- Fallback content if no popular stays are available -->
       </div>
     </c:otherwise>
   </c:choose>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<c:if test="${empty hotels}">
-  <script>
-    // JavaScript code for fetching popular stays
-    // [Your existing JavaScript code for fetching hotels based on geolocation]
-    // Remember to escape the $ characters in JavaScript template literals
-  </script>
-</c:if>
 
 </body>
 </html>

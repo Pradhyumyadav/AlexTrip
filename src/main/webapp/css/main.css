@@ -1,0 +1,109 @@
+:root {
+    --primary-color: #FF5A5F;  /* Airbnb's primary red color */
+    --text-color: #484848;     /* Soft black for text */
+    --background-color: #F7F7F7;  /* Off-white background for most areas */
+    --light-gray: #DBDBDB;     /* Light gray for borders and lines */
+}
+
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+}
+
+.navbar {
+    background-color: white;
+    border-bottom: 1px solid var(--light-gray);
+    padding: 10px 20px;
+}
+
+.nav-link {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 10px 15px;
+    display: inline-block;
+}
+
+.nav-link:hover {
+    background-color: var(--light-gray);
+}
+
+.carousel-item img {
+    height: 450px;  /* Fixed height for uniformity */
+    object-fit: cover;  /* Ensures images cover the area appropriately without stretching */
+    width: 100%;
+    border-radius: 8px;  /* Rounded corners for a softer look */
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500; /* Medium font weight for better legibility */
+}
+
+.btn-primary:hover {
+    background-color: #FF7E82; /* Lighter shade of primary color */
+}
+
+.alert-danger {
+    color: #721c24; /* Darker shade for error text */
+    background-color: #f8d7da; /* Light red/pink background for error alerts */
+    border-color: #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Responsive grid for hotel details and other sections */
+.container {
+    max-width: 1200px; /* Maximum width of the content area */
+    margin: auto; /* Center aligning the container */
+}
+
+/* Hotel details styles */
+.hotel-details h2 {
+    color: var(--primary-color);
+}
+
+.hotel-description, .amenities {
+    margin-top: 20px;
+}
+
+.amenities ul {
+    list-style: none;  /* Removes default list styling */
+    padding: 0;
+}
+
+.amenities li {
+    padding: 5px 0; /* Vertical padding for list items */
+    border-bottom: 1px solid var(--light-gray); /* Subtle separator */
+}
+
+/* Styles for room features and booking info section */
+.features, .booking-info {
+    background: white;
+    padding: 20px;
+    border-radius: 8px; /* Rounded corners for the feature and booking cards */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);  /* Subtle shadow for depth */
+}
+
+.booking-info {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+    }
+
+    .carousel-item img {
+        height: 250px; /* Reduced height for smaller devices */
+    }
+}

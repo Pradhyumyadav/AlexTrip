@@ -25,7 +25,6 @@ public class HotelAPI {
     private BigDecimal cachedUsdToGbpRate = BigDecimal.ONE;
 
     public HotelAPI() {
-        // Load the .env file explicitly from a specific directory
         Dotenv dotenv = Dotenv.configure()
                 .directory("/Users/pradhyumyadav/IdeaProjects/AlexTripAgencyManagementSystem/src/main/java/service")
                 .filename(".env")
@@ -63,6 +62,30 @@ public class HotelAPI {
         return parseHotel(resultNode, usdToGbpRate);
     }
 
+    public List<Hotel> fetchHotelsByLocation(String latitude, String longitude, int radius, String sortPrice, String duration, String activityType, String priceRange) throws IOException, InterruptedException {
+        List<Hotel> hotels = new ArrayList<>();
+        String urlString = String.format("https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=%s,%s&radius=%d&type=lodging&key=%s", latitude, longitude, radius, googleApiKey);
+
+        JsonNode rootNode = fetchJsonFromUrl(urlString);
+        JsonNode resultsNode = rootNode.path("results");
+
+        if (resultsNode.isMissingNode() || !resultsNode.isArray()) {
+            logger.warn("No results found for the specified location: {}, {}", latitude, longitude);
+            return hotels;
+        }
+
+        BigDecimal usdToGbpRate = getUsdToGbpExchangeRate();
+        for (JsonNode hotelNode : resultsNode) {
+            Hotel hotel = parseHotel(hotelNode, usdToGbpRate);
+            if (hotel != null && matchesFilters(hotel, activityType, priceRange, duration)) {
+                hotels.add(hotel);
+            }
+        }
+
+        sortHotelsByPrice(hotels, sortPrice);
+        return hotels;
+    }
+
     public List<Hotel> fetchHotelsByCity(String city, int radius, String sortPrice, String duration, String activityType, String priceRange) throws IOException, InterruptedException {
         List<Hotel> hotels = new ArrayList<>();
         String urlString = String.format("https://maps.googleapis.com/maps/api/place/textsearch/json?query=hotels+in+%s&radius=%d&type=lodging&key=%s", city, radius, googleApiKey);
@@ -95,7 +118,7 @@ public class HotelAPI {
         double longitude = hotelNode.path("geometry").path("location").path("lng").asDouble(0.0);
         double rating = hotelNode.path("rating").asDouble(0.0);
         int numberReviews = hotelNode.path("user_ratings_total").asInt(0);
-        BigDecimal price = new BigDecimal(hotelNode.path("price_level").asInt(20)); // Assuming $20 per level as placeholder
+        BigDecimal price = new BigDecimal(hotelNode.path("price_level").asInt(20));
 
         BigDecimal priceInGBP = price.multiply(usdToGbpRate);
 
@@ -146,7 +169,7 @@ public class HotelAPI {
     }
 
     private BigDecimal getUsdToGbpExchangeRate() throws IOException, InterruptedException {
-        if (cachedUsdToGbpRate.compareTo(BigDecimal.ONE) == 0) {  // Assumes default is unupdated
+        if (cachedUsdToGbpRate.compareTo(BigDecimal.ONE) == 0) {
             updateExchangeRate();
         }
         return cachedUsdToGbpRate;
@@ -162,7 +185,7 @@ public class HotelAPI {
 
         if (response.statusCode() == 200) {
             JsonNode rootNode = objectMapper.readTree(response.body());
-            cachedUsdToGbpRate = new BigDecimal(rootNode.path("data").path("GBP").asText("1"));  // Properly update the cached rate
+            cachedUsdToGbpRate = new BigDecimal(rootNode.path("data").path("GBP").asText("1"));
         } else {
             logger.error("Failed to update exchange rate: HTTP error code {}", response.statusCode());
         }
