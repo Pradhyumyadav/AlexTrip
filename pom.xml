@@ -150,6 +150,19 @@
       <artifactId>tomcat-embed-jasper</artifactId>
       <version>10.1.7</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/com.github.jsimone/webapp-runner -->
+    <dependency>
+      <groupId>com.github.jsimone</groupId>
+      <artifactId>webapp-runner</artifactId>
+      <version>9.0.27.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-dependency-plugin -->
+    <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-dependency-plugin</artifactId>
+      <version>3.8.1</version>
+    </dependency>
   </dependencies>
 
   <build>
