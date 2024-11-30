@@ -1,44 +1,93 @@
 package Servlet;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.sql.DataSource;
 
-@WebServlet("/login")
+import org.mindrot.jbcrypt.BCrypt;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+@WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
-    private static final Logger logger = LoggerFactory.getLogger(LoginServlet.class);
-    private static volatile boolean isFirebaseInitialized = false;
+
+    private static final Logger LOGGER = Logger.getLogger(LoginServlet.class.getName());
+    private DataSource dataSource;
 
     @Override
     public void init() throws ServletException {
-        synchronized (LoginServlet.class) {
-            if (!isFirebaseInitialized) {
-                try {
-                    // Construct path to Firebase credentials file within the project
-                    String filePath = getServletContext().getRealPath("/WEB-INF/classes/alextrip-fb-firebase-adminsdk-ir6ji-d2a1ed992c.json");
-                    InputStream serviceAccount = new FileInputStream(filePath);
+        try {
+            InitialContext ctx = new InitialContext();
+            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
+        } catch (NamingException e) {
+            LOGGER.log(Level.SEVERE, "Unable to initialize DataSource", e);
+            throw new ServletException("Unable to initialize DataSource", e);
+        }
+    }
 
-                    FirebaseOptions options = FirebaseOptions.builder()
-                            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                            .build();
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Forward GET requests to the login page
+        request.getRequestDispatcher("/WEB-INF/views/Login.jsp").forward(request, response);
+    }
 
-                    FirebaseApp.initializeApp(options);
-                    isFirebaseInitialized = true;
-                    logger.info("Firebase has been initialized successfully.");
-                } catch (IOException e) {
-                    logger.error("Error initializing Firebase: ", e);
-                    throw new ServletException("Failed to initialize Firebase", e);
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+
+        if (email == null || password == null || email.trim().isEmpty() || password.trim().isEmpty()) {
+            request.setAttribute("errorMessage", "Email and Password are required and cannot be blank.");
+            request.getRequestDispatcher("/WEB-INF/views/Login.jsp").forward(request, response);
+            return;
+        }
+
+        try (Connection conn = dataSource.getConnection()) {
+            String sql = "SELECT user_id, username, password, role FROM users WHERE email = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, email.trim());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        int userId = rs.getInt("user_id");
+                        String username = rs.getString("username");
+                        String storedHash = rs.getString("password");
+                        String role = rs.getString("role");
+
+                        if (BCrypt.checkpw(password, storedHash)) {
+                            // Create a session and store user details
+                            HttpSession session = request.getSession(true); // Ensures a session is always created
+                            session.setAttribute("userId", userId);
+                            session.setAttribute("username", username);
+                            session.setAttribute("userEmail", email.trim());
+                            session.setAttribute("userRole", role);
+
+                            // Redirect to /index after successful login
+                            response.sendRedirect(request.getContextPath() + "/index");
+                        } else {
+                            // Invalid password
+                            request.setAttribute("errorMessage", "Invalid email or password.");
+                            request.getRequestDispatcher("/WEB-INF/views/Login.jsp").forward(request, response);
+                        }
+                    } else {
+                        // Email not found
+                        request.setAttribute("errorMessage", "User not found.");
+                        request.getRequestDispatcher("/WEB-INF/views/Login.jsp").forward(request, response);
+                    }
                 }
             }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Database error during login", e);
+            throw new ServletException("Database error during login", e);
         }
     }
 }

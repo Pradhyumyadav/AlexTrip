@@ -3,77 +3,72 @@ package Model;
 import java.util.Objects;
 
 public class Photo {
-    private final int maxHeight;
-    private final int maxWidth;
-    private final String urlTemplate;
+    private int photoId; // Unique identifier for the photo
+    private String filePath; // Path of the photo file, stored in the database
+    private String description; // Description of the photo
+    private String altText; // Alternative text for accessibility
 
-    private Photo(Builder builder) {
-        this.maxHeight = builder.maxHeight;
-        this.maxWidth = builder.maxWidth;
-        this.urlTemplate = builder.urlTemplate;
+    // Constructor
+    public Photo(int photoId, String filePath, String description, String altText) {
+        this.photoId = photoId;
+        this.setFilePath(filePath); // Use setter to apply path validation
+        this.description = description;
+        this.altText = altText;
     }
 
-    public static class Builder {
-        private int maxHeight;
-        private int maxWidth;
-        private String urlTemplate;
+    // Default constructor for flexibility
+    public Photo() {}
 
-        public Builder maxHeight(int maxHeight) {
-            if (maxHeight <= 0) throw new IllegalArgumentException("maxHeight must be positive");
-            this.maxHeight = maxHeight;
-            return this;
-        }
-
-        public Builder maxWidth(int maxWidth) {
-            if (maxWidth <= 0) throw new IllegalArgumentException("maxWidth must be positive");
-            this.maxWidth = maxWidth;
-            return this;
-        }
-
-        public Builder urlTemplate(String urlTemplate) {
-            this.urlTemplate = Objects.requireNonNull(urlTemplate, "urlTemplate cannot be null");
-            return this;
-        }
-
-        public Photo build() {
-            if (maxHeight <= 0) throw new IllegalStateException("maxHeight must be set and positive");
-            if (maxWidth <= 0) throw new IllegalStateException("maxWidth must be set and positive");
-            if (urlTemplate == null) throw new IllegalStateException("urlTemplate must be set");
-            return new Photo(this);
-        }
+    // Getters and Setters
+    public int getPhotoId() {
+        return photoId;
     }
 
-    // Getters (no setters to maintain immutability)
-    public int getMaxHeight() {
-        return maxHeight;
+    public void setPhotoId(int photoId) {
+        this.photoId = photoId;
     }
 
-    public int getMaxWidth() {
-        return maxWidth;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public String getUrlTemplate() {
-        return urlTemplate;
-    }
-
-    // Utility method to get the URL with specific dimensions
-    public String getUrlWithDimensions(int width, int height) {
-        if (width <= 0 || height <= 0) {
-            throw new IllegalArgumentException("Width and height must be positive");
+    public void setFilePath(String filePath) {
+        if (!isValidFilePath(filePath)) {
+            throw new IllegalArgumentException("Invalid file path format.");
         }
-        if (width > maxWidth || height > maxHeight) {
-            throw new IllegalArgumentException("Requested dimensions exceed maximum allowed");
-        }
-        return urlTemplate.replace("{width}", String.valueOf(width))
-                .replace("{height}", String.valueOf(height));
+        this.filePath = filePath;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getAltText() {
+        return altText;
+    }
+
+    public void setAltText(String altText) {
+        this.altText = altText;
+    }
+
+    // Utility method to validate the file path format
+    public static boolean isValidFilePath(String filePath) {
+        // Regex checks for a path that starts with '/uploaded_photos/', followed by a timestamp, host ID, and a valid filename
+        return filePath != null && filePath.matches("^/uploaded_photos/\\d+_(\\d+)_.*\\.(jpg|jpeg|png|gif)$");
+    }
+
+    // ToString for debugging or logging purposes
     @Override
     public String toString() {
         return "Photo{" +
-                "maxHeight=" + maxHeight +
-                ", maxWidth=" + maxWidth +
-                ", urlTemplate='" + urlTemplate + '\'' +
+                "photoId=" + photoId +
+                ", filePath='" + filePath + '\'' +
+                ", description='" + description + '\'' +
+                ", altText='" + altText + '\'' +
                 '}';
     }
 
@@ -82,13 +77,14 @@ public class Photo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Photo photo = (Photo) o;
-        return maxHeight == photo.maxHeight &&
-                maxWidth == photo.maxWidth &&
-                Objects.equals(urlTemplate, photo.urlTemplate);
+        return photoId == photo.photoId &&
+                Objects.equals(filePath, photo.filePath) &&
+                Objects.equals(description, photo.description) &&
+                Objects.equals(altText, photo.altText);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(maxHeight, maxWidth, urlTemplate);
+        return Objects.hash(photoId, filePath, description, altText);
     }
 }

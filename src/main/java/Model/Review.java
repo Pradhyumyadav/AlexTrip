@@ -1,101 +1,104 @@
 package Model;
 
-import java.time.LocalDate;
-import java.util.Objects;
+import java.time.LocalDateTime;
 
 public class Review {
-    private String title;
-    private String text;
-    private LocalDate publishedDate;
-    private UserProfile userProfile;
-    private double rating;  // Added rating field
+    private int id; // Unique ID for the review
+    private int tripId; // Foreign key to associate with a Trip
+    private int rating; // Rating given in the review (1-5 scale)
+    private String reviewText; // Text of the review
+    private String reviewerName; // Name of the reviewer
+    private LocalDateTime timestamp; // When the review was submitted
 
-    public Review(String title, String text, LocalDate publishedDate, UserProfile userProfile, double rating) {
-        this.title = Objects.requireNonNull(title, "Title cannot be null");
-        this.text = Objects.requireNonNull(text, "Text cannot be null");
-        this.publishedDate = Objects.requireNonNull(publishedDate, "Published date cannot be null");
-        this.userProfile = Objects.requireNonNull(userProfile, "User profile cannot be null");
-        this.rating = validateRating(rating);
+    // Constructor with all fields
+    public Review(int id, int tripId, int rating, String reviewText, String reviewerName, LocalDateTime timestamp) {
+        this.id = id;
+        this.tripId = tripId;
+        this.rating = rating;
+        this.reviewText = reviewText;
+        this.reviewerName = reviewerName;
+        this.timestamp = timestamp;
     }
 
-    // Getters and Setters with basic validation
-    public String getTitle() {
-        return title;
+    // Overloaded constructor for flexibility (without ID for new reviews)
+    public Review(int tripId, int rating, String reviewText, String reviewerName, LocalDateTime timestamp) {
+        this.tripId = tripId;
+        this.rating = rating;
+        this.reviewText = reviewText;
+        this.reviewerName = reviewerName;
+        this.timestamp = timestamp;
     }
 
-    public void setTitle(String title) {
-        this.title = Objects.requireNonNull(title, "Title cannot be null");
+    // Default constructor
+    public Review() {}
+
+    // Getters and Setters
+    public int getId() {
+        return id;
     }
 
-    public String getText() {
-        return text;
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public void setText(String text) {
-        this.text = Objects.requireNonNull(text, "Text cannot be null");
+    public int getTripId() {
+        return tripId;
     }
 
-    public LocalDate getPublishedDate() {
-        return publishedDate;
+    public void setTripId(int tripId) {
+        this.tripId = tripId;
     }
 
-    public void setPublishedDate(LocalDate publishedDate) {
-        this.publishedDate = Objects.requireNonNull(publishedDate, "Published date cannot be null");
-    }
-
-    public UserProfile getUserProfile() {
-        return userProfile;
-    }
-
-    public void setUserProfile(UserProfile userProfile) {
-        this.userProfile = Objects.requireNonNull(userProfile, "User profile cannot be null");
-    }
-
-    public double getRating() {
+    public int getRating() {
         return rating;
     }
 
-    public void setRating(double rating) {
-        this.rating = validateRating(rating);
-    }
-
-    private double validateRating(double rating) {
-        if (rating < 0 || rating > 5) {
-            throw new IllegalArgumentException("Rating must be between 0 and 5");
+    public void setRating(int rating) {
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5.");
         }
-        return rating;
+        this.rating = rating;
     }
 
+    public String getReviewText() {
+        return reviewText;
+    }
+
+    public void setReviewText(String reviewText) {
+        this.reviewText = reviewText;
+    }
+
+    public String getReviewerName() {
+        return reviewerName;
+    }
+
+    public void setReviewerName(String reviewerName) {
+        this.reviewerName = reviewerName;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    // Helper method to validate the review
+    public boolean isValidReview() {
+        return rating >= 1 && rating <= 5 && reviewText != null && !reviewText.trim().isEmpty() && reviewerName != null;
+    }
+
+    // ToString for debugging or logging purposes
     @Override
     public String toString() {
         return "Review{" +
-                "title='" + title + '\'' +
-                ", text='" + text + '\'' +
-                ", publishedDate=" + publishedDate +
-                ", userProfile=" + userProfile +
+                "id=" + id +
+                ", tripId=" + tripId +
                 ", rating=" + rating +
+                ", reviewText='" + reviewText + '\'' +
+                ", reviewerName='" + reviewerName + '\'' +
+                ", timestamp=" + timestamp +
                 '}';
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Review review = (Review) o;
-        return Double.compare(review.rating, rating) == 0 &&
-                Objects.equals(title, review.title) &&
-                Objects.equals(text, review.text) &&
-                Objects.equals(publishedDate, review.publishedDate) &&
-                Objects.equals(userProfile, review.userProfile);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(title, text, publishedDate, userProfile, rating);
-    }
-
-    public Comparable<Object> getDate() {
-        return null;
-    }
 }
-

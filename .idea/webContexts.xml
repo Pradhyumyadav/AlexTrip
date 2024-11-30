@@ -4,12 +4,30 @@
     <option name="state">
       <map>
         <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/listings.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel/HostLogin.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel/HostPanel.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel/HostSignup.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel/HostSupport.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel/salesPrediction.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/HostPanel" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/Login.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/Signup.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/bookTrip.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
         <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/booking.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/bookingConfirmation.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
         <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/hoteldetails.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
         <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/hotels.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
         <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/listings.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/myTrips.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/navbar.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/search.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/searchTrips.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views/viewDetails.jsp" value="file://$PROJECT_DIR$/src/main/webapp/WEB-INF/views" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/about.jsp" value="file://$PROJECT_DIR$/src/main/webapp" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/contact.jsp" value="file://$PROJECT_DIR$/src/main/webapp" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/homepage.jsp" value="file://$PROJECT_DIR$/src/main/webapp" />
         <entry key="file://$PROJECT_DIR$/src/main/webapp/index.jsp" value="file://$PROJECT_DIR$/src/main/webapp" />
         <entry key="file://$PROJECT_DIR$/src/main/webapp/listings.jsp" value="file://$PROJECT_DIR$/src/main/webapp" />
+        <entry key="file://$PROJECT_DIR$/src/main/webapp/myTrips.jsp" value="file://$PROJECT_DIR$/src/main/webapp" />
       </map>
     </option>
   </component>
