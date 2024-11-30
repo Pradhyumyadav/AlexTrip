@@ -39,23 +39,25 @@ build/
 .DS_Store
 
 ### AL ###
-#Template for AL projects for Dynamics 365 Business Central
-#Cache folder
+# Template for AL projects for Dynamics 365 Business Central
+# Cache folder
 .alcache/
-#Symbols folder
+# Symbols folder
 .alpackages/
-#Snapshots folder
+# Snapshots folder
 .snapshots/
-#Testing Output folder
+# Testing Output folder
 .output/
-#Extension App-file
+# Extension App-file
 *.app
-#Rapid Application Development File
+# Rapid Application Development File
 rad.json
-#Translation Base-file
+# Translation Base-file
 *.g.xlf
-#License-file
+# License-file
 *.flf
-#Test results file
-TestResults.xmlsrc/main/webapp/WEB-INF/classes/alextrip-fb-firebase-adminsdk-ir6ji-d2a1ed992c.json
+# Test results file
+TestResults.xml
+
+# Firebase admin SDK JSON key (Security risk to commit this, should be excluded)
 src/main/webapp/WEB-INF/classes/alextrip-fb-firebase-adminsdk-ir6ji-d2a1ed992c.json
