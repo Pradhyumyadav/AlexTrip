@@ -16,7 +16,7 @@ import Model.Offer;
 import Model.Trip;
 import service.OfferService;
 import service.TripService;
-import service.DatabaseConnectionManager;
+import utils.DatabaseConnectionManager;
 
 @WebServlet(name = "IndexController", urlPatterns = {"/index"})
 public class IndexController extends HttpServlet {
@@ -28,8 +28,7 @@ public class IndexController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            // Use DatabaseConnectionManager to get the DataSource
-            DataSource dataSource = DatabaseConnectionManager.getDataSource();
+            DataSource dataSource = (DataSource) DatabaseConnectionManager.getConnection();
             tripService = new TripService(dataSource);
             offerService = new OfferService(dataSource);
             LOGGER.info("Services initialized successfully.");
@@ -69,11 +68,5 @@ public class IndexController extends HttpServlet {
             request.setAttribute("errorMessage", "Unable to process request. Please try again later.");
             request.getRequestDispatcher("/WEB-INF/views/errorPage.jsp").forward(request, response);
         }
-    }
-
-    @Override
-    public void destroy() {
-        DatabaseConnectionManager.closeDataSource();
-        LOGGER.info("DataSource closed.");
     }
 }
