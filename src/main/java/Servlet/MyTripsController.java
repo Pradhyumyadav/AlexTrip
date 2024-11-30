@@ -1,17 +1,16 @@
 package Servlet;
 
+import Servlet.BookingDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.DatabaseConnectionManager;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,19 +24,6 @@ import java.util.List;
 public class MyTripsController extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(MyTripsController.class);
-    private DataSource dataSource;
-
-    @Override
-    public void init() throws ServletException {
-        try {
-            InitialContext ctx = new InitialContext();
-            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
-            logger.info("DataSource initialized successfully.");
-        } catch (NamingException e) {
-            logger.error("Database connection problem during initialization", e);
-            throw new ServletException("Database connection problem", e);
-        }
-    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -50,7 +36,7 @@ public class MyTripsController extends HttpServlet {
 
         Integer userId = (Integer) session.getAttribute("userId");
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             String sql = "SELECT b.booking_id, b.num_participants, b.booking_date, b.customer_name, b.customer_email, " +
                     "b.special_requests, b.total_price, t.destination AS trip_name, t.start_date, t.end_date, " +
                     "t.cancellation_policy, t.photos, t.description AS trip_description, t.activity_type " +
@@ -129,7 +115,7 @@ public class MyTripsController extends HttpServlet {
             return;
         }
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             String sql = "UPDATE bookings SET special_requests = ? WHERE booking_id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, specialRequest.trim());
@@ -150,7 +136,7 @@ public class MyTripsController extends HttpServlet {
             return;
         }
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             String sql = "DELETE FROM bookings WHERE booking_id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, Integer.parseInt(bookingId));

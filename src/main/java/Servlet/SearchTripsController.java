@@ -2,31 +2,32 @@ package Servlet;
 
 import Model.Trip;
 import service.TripService;
+import utils.DatabaseConnectionManager;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet(name = "SearchTripsController", urlPatterns = {"/searchTrips"})
 public class SearchTripsController extends HttpServlet {
 
+    private static final Logger LOGGER = Logger.getLogger(SearchTripsController.class.getName());
     private TripService tripService;
 
     @Override
     public void init() throws ServletException {
         try {
-            // Lookup the DataSource from JNDI
-            InitialContext initialContext = new InitialContext();
-            DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/alextrip");
-            tripService = new TripService(dataSource);
-        } catch (NamingException e) {
-            throw new ServletException("Unable to acquire DataSource from JNDI", e);
+            // Use DatabaseConnectionManager to get the DataSource
+            tripService = new TripService(DatabaseConnectionManager.getDataSource());
+            LOGGER.info("TripService initialized successfully.");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize TripService", e);
+            throw new ServletException("Unable to initialize TripService", e);
         }
     }
 
@@ -51,34 +52,41 @@ public class SearchTripsController extends HttpServlet {
                 maxPrice = new BigDecimal(priceStr.trim());
             }
         } catch (NumberFormatException e) {
-            // Log and handle invalid input formats
+            LOGGER.log(Level.WARNING, "Invalid numeric format for duration or max price", e);
             request.setAttribute("error", "Invalid numeric format for duration or max price.");
             request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
             return;
         }
 
-        // Fetch trips based on search criteria
-        List<Trip> trips = tripService.searchTrips(
-                destination != null ? destination.trim() : null,
-                duration,
-                maxPrice,
-                activityType != null ? activityType.trim() : null
-        );
+        try {
+            // Fetch trips based on search criteria
+            List<Trip> trips = tripService.searchTrips(
+                    destination != null ? destination.trim() : null,
+                    duration,
+                    maxPrice,
+                    activityType != null ? activityType.trim() : null
+            );
 
-        // Set attributes for the view
-        request.setAttribute("trips", trips);
-        request.setAttribute("destination", destination);
-        request.setAttribute("duration", duration);
-        request.setAttribute("maxPrice", maxPrice);
-        request.setAttribute("activityType", activityType);
+            // Set attributes for the view
+            request.setAttribute("trips", trips);
+            request.setAttribute("destination", destination);
+            request.setAttribute("duration", duration);
+            request.setAttribute("maxPrice", maxPrice);
+            request.setAttribute("activityType", activityType);
 
-        // Handle no result scenario
-        if (trips.isEmpty()) {
-            request.setAttribute("message", "No trips found matching your search criteria. Try different filters.");
+            // Handle no result scenario
+            if (trips.isEmpty()) {
+                request.setAttribute("message", "No trips found matching your search criteria. Try different filters.");
+            }
+
+            LOGGER.info("Search results loaded successfully.");
+            // Forward to the search results JSP
+            request.getRequestDispatcher("/WEB-INF/views/searchTrips.jsp").forward(request, response);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error while searching for trips", e);
+            request.setAttribute("errorMessage", "Unable to process your request. Please try again later.");
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
-
-        // Forward to the search results JSP
-        request.getRequestDispatcher("/WEB-INF/views/searchTrips.jsp").forward(request, response);
     }
 
     @Override

@@ -1,15 +1,13 @@
 package Servlet.HostPanel;
 
 import org.mindrot.jbcrypt.BCrypt;
+import utils.DatabaseConnectionManager;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,23 +19,11 @@ import java.util.logging.Logger;
 public class HostSignupServlet extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(HostSignupServlet.class.getName());
-    private DataSource dataSource;
-
-    @Override
-    public void init() throws ServletException {
-        try {
-            InitialContext ctx = new InitialContext();
-            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
-        } catch (NamingException e) {
-            LOGGER.log(Level.SEVERE, "Failed to initialize DataSource", e);
-            throw new ServletException("Unable to initialize DataSource", e);
-        }
-    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Forward to HostSignup.jsp
-        request.getRequestDispatcher("/WEB-INF/views//HostPanel/HostSignup.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/HostPanel/HostSignup.jsp").forward(request, response);
     }
 
     @Override
@@ -46,6 +32,7 @@ public class HostSignupServlet extends HttpServlet {
         String email = request.getParameter("email");
         String plainPassword = request.getParameter("password");
 
+        // Validate form input
         if (name == null || name.trim().isEmpty() ||
                 email == null || email.trim().isEmpty() ||
                 plainPassword == null || plainPassword.trim().isEmpty()) {
@@ -54,9 +41,11 @@ public class HostSignupServlet extends HttpServlet {
             return;
         }
 
+        // Hash the password using BCrypt
         String hashedPassword = BCrypt.hashpw(plainPassword, BCrypt.gensalt());
 
-        try (Connection conn = dataSource.getConnection()) {
+        // Use DatabaseConnectionManager for database operations
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             String sql = "INSERT INTO hosts (name, email, password, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, name.trim());
@@ -71,7 +60,7 @@ public class HostSignupServlet extends HttpServlet {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error during host signup", e);
             request.setAttribute("errorMessage", "Signup failed. Please try again later.");
-            request.getRequestDispatcher("/WEB-INF/views/HostSignup.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/HostPanel/HostSignup.jsp").forward(request, response);
         }
     }
 }

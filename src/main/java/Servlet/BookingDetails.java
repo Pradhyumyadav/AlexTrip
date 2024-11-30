@@ -21,9 +21,6 @@ public class BookingDetails implements Serializable {
     private String tripDescription;    // To display trip description
     private String activityType;       // To display the activity type
 
-    // Default Constructor
-    public BookingDetails() {
-    }
 
     // Full Constructor
     public BookingDetails(int bookingId, int numParticipants, Date bookingDate, String customerName,

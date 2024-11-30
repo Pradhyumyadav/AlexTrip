@@ -1,5 +1,6 @@
 package Servlet;
 
+import utils.DatabaseConnectionManager;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -7,30 +8,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.naming.InitialContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
 
 @WebServlet(name = "BookingConfirmationController", urlPatterns = {"/bookingConfirmation"})
 public class BookingConfirmationController extends HttpServlet {
-
-    private DataSource dataSource;
-
-    @Override
-    public void init() throws ServletException {
-        try {
-            InitialContext ctx = new InitialContext();
-            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
-        } catch (Exception e) {
-            throw new ServletException("Database connection error during initialization", e);
-        }
-    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -48,7 +34,7 @@ public class BookingConfirmationController extends HttpServlet {
             return;
         }
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             String sql = "SELECT b.booking_id, b.num_participants, b.booking_date, b.total_price, b.special_requests, " +
                     "t.destination AS trip_name, t.start_date, t.end_date, t.cancellation_policy, b.customer_name, " +
                     "b.customer_email, t.photos AS photo_paths, t.description AS trip_description, t.activity_type " +

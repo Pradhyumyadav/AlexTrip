@@ -1,28 +1,19 @@
 package Servlet;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import utils.DatabaseConnectionManager;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet(name = "BookTripServlet", urlPatterns = {"/bookTrip"})
 public class BookTripServlet extends HttpServlet {
 
-    private DataSource dataSource;
-
-    @Override
-    public void init() throws ServletException {
-        try {
-            InitialContext ctx = new InitialContext();
-            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
-        } catch (NamingException e) {
-            throw new ServletException("Database connection problem", e);
-        }
-    }
+    private static final Logger LOGGER = Logger.getLogger(BookTripServlet.class.getName());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -32,7 +23,7 @@ public class BookTripServlet extends HttpServlet {
             return;
         }
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT trip_id, trip_name, duration, price FROM trips WHERE trip_id = ?")) {
             stmt.setInt(1, Integer.parseInt(tripId));
             try (ResultSet rs = stmt.executeQuery()) {
@@ -47,6 +38,7 @@ public class BookTripServlet extends HttpServlet {
                 }
             }
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Database error while fetching trip details.", e);
             throw new ServletException("Database error while fetching trip details.", e);
         }
 
@@ -89,13 +81,14 @@ public class BookTripServlet extends HttpServlet {
             request.setAttribute("errorMessage", "Invalid number format for participants.");
             request.getRequestDispatcher("/WEB-INF/views/bookTrip.jsp").forward(request, response);
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Database error during booking", e);
             request.setAttribute("errorMessage", "Database error: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/views/bookTrip.jsp").forward(request, response);
         }
     }
 
     private double calculateTotalPrice(String tripId, int numParticipants) throws SQLException {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT price FROM trips WHERE trip_id = ?")) {
             stmt.setInt(1, Integer.parseInt(tripId));
             try (ResultSet rs = stmt.executeQuery()) {
@@ -109,7 +102,7 @@ public class BookTripServlet extends HttpServlet {
     }
 
     private int insertBooking(String tripId, int userId, int numParticipants, String customerName, String customerEmail, String customerPhone, String specialRequests, double totalPrice) throws SQLException {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                      "INSERT INTO bookings (trip_id, user_id, num_participants, customer_name, customer_email, customer_phone, special_requests, total_price, booking_date) " +
                              "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE)", PreparedStatement.RETURN_GENERATED_KEYS)) {

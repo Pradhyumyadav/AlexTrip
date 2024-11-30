@@ -6,7 +6,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -28,10 +27,10 @@ public class IndexController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            DataSource dataSource = (DataSource) DatabaseConnectionManager.getConnection();
-            tripService = new TripService(dataSource);
-            offerService = new OfferService(dataSource);
-            LOGGER.info("Services initialized successfully.");
+            // Initialize the services using the default constructor
+            tripService = new TripService(DatabaseConnectionManager.getDataSource());  // Using DatabaseConnectionManager.getConnection() inside the constructor
+            offerService = new OfferService(); // Using DatabaseConnectionManager.getConnection() inside the constructor
+            LOGGER.info("Services initialized successfully using DatabaseConnectionManager.");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize services", e);
             throw new ServletException("Initialization error", e);

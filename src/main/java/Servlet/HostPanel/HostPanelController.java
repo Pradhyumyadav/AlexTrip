@@ -6,13 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.OfferService;
 import service.TripService;
+import utils.DatabaseConnectionManager;
 
-import javax.annotation.Resource;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
-import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -28,20 +27,24 @@ import java.util.List;
         maxRequestSize = 1024 * 1024 * 50     // 50MB
 )
 public class HostPanelController extends HttpServlet {
-    private static final Logger logger = LoggerFactory.getLogger(HostPanelController.class);
 
-    @Resource(name = "jdbc/alextrip")
-    private DataSource dataSource;
+    private static final Logger logger = LoggerFactory.getLogger(HostPanelController.class);
+    private static final String IMAGE_UPLOAD_DIR = "/uploaded_photos";
 
     private TripService tripService;
     private OfferService offerService;
 
-    private static final String IMAGE_UPLOAD_DIR = "/uploaded_photos";
-
     @Override
     public void init() throws ServletException {
-        tripService = new TripService(dataSource);
-        offerService = new OfferService(dataSource);
+        try {
+            // Initializing TripService and OfferService using DatabaseConnectionManager
+            tripService = new TripService(DatabaseConnectionManager.getDataSource());
+            offerService = new OfferService();
+            logger.info("HostPanelController initialized successfully.");
+        } catch (Exception e) {
+            logger.error("Failed to initialize HostPanelController", e);
+            throw new ServletException("Initialization failed", e);
+        }
     }
 
     @Override

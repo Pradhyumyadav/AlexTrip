@@ -1,5 +1,7 @@
 package Servlet;
 
+import utils.DatabaseConnectionManager;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -13,14 +15,12 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.naming.InitialContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
 
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -32,15 +32,11 @@ import io.jsonwebtoken.security.Keys;
 public class SignupServlet extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(SignupServlet.class.getName());
-    private DataSource dataSource;
     private Key jwtKey;
 
     @Override
     public void init() throws ServletException {
         try {
-            InitialContext ctx = new InitialContext();
-            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
-
             String jwtKeyString = System.getenv("JWT_KEY");
             if (jwtKeyString == null || jwtKeyString.isEmpty()) {
                 LOGGER.warning("JWT_KEY not found. Using a default key for development. Replace this in production.");
@@ -77,7 +73,7 @@ public class SignupServlet extends HttpServlet {
 
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             if (isEmailAlreadyRegistered(email, conn)) {
                 response.sendRedirect("signup.jsp?error=duplicate_email");
                 return;
@@ -128,7 +124,9 @@ public class SignupServlet extends HttpServlet {
         Instant exp = now.plus(1, ChronoUnit.HOURS);
 
         return Jwts.builder()
-                .claim(Claims.SUBJECT, String.valueOf(userId)).issuedAt(Date.from(now)).expiration(Date.from(exp))
+                .claim(Claims.SUBJECT, String.valueOf(userId))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
                 .signWith(jwtKey)
                 .compact();
     }

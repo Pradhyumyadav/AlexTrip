@@ -1,16 +1,14 @@
 package Servlet;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import org.mindrot.jbcrypt.BCrypt;
+import utils.DatabaseConnectionManager;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
-
-import org.mindrot.jbcrypt.BCrypt;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,18 +20,6 @@ import java.util.logging.Logger;
 public class LoginServlet extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(LoginServlet.class.getName());
-    private DataSource dataSource;
-
-    @Override
-    public void init() throws ServletException {
-        try {
-            InitialContext ctx = new InitialContext();
-            dataSource = (DataSource) ctx.lookup("java:comp/env/jdbc/alextrip");
-        } catch (NamingException e) {
-            LOGGER.log(Level.SEVERE, "Unable to initialize DataSource", e);
-            throw new ServletException("Unable to initialize DataSource", e);
-        }
-    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -52,7 +38,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = DatabaseConnectionManager.getConnection()) {
             String sql = "SELECT user_id, username, password, role FROM users WHERE email = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, email.trim());

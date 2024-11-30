@@ -2,15 +2,17 @@ package Servlet;
 
 import Model.Trip;
 import service.TripService;
+import utils.DatabaseConnectionManager;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,12 +25,10 @@ public class ViewDetailsController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            // Initialize DataSource and TripService
-            InitialContext initialContext = new InitialContext();
-            DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/alextrip");
-            tripService = new TripService(dataSource);
+            // Initialize TripService using DatabaseConnectionManager
+            tripService = new TripService(DatabaseConnectionManager.getDataSource());
             LOGGER.info("ViewDetailsController initialized successfully.");
-        } catch (NamingException e) {
+        } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error initializing ViewDetailsController", e);
             throw new ServletException("Initialization failed", e);
         }
@@ -55,16 +55,21 @@ public class ViewDetailsController extends HttpServlet {
         }
 
         // Fetch trip details
-        Trip trip = tripService.getTripById(tripId);
-        if (trip == null) {
-            LOGGER.info("No trip found with ID: " + tripId);
-            response.sendRedirect("errorPage.jsp");
-            return;
-        }
+        try {
+            Trip trip = tripService.getTripById(tripId);
+            if (trip == null) {
+                LOGGER.info("No trip found with ID: " + tripId);
+                response.sendRedirect("errorPage.jsp");
+                return;
+            }
 
-        // Set trip details in the request and forward to JSP
-        request.setAttribute("trip", trip);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/viewDetails.jsp");
-        dispatcher.forward(request, response);
+            // Set trip details in the request and forward to JSP
+            request.setAttribute("trip", trip);
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/viewDetails.jsp");
+            dispatcher.forward(request, response);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error fetching trip details for ID: " + tripId, e);
+            response.sendRedirect("errorPage.jsp");
+        }
     }
 }

@@ -1,6 +1,7 @@
 package service;
 
 import Model.Trip;
+import utils.DatabaseConnectionManager;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
@@ -10,17 +11,32 @@ import java.util.List;
 
 public class TripService {
 
-    private final DataSource dataSource;
-
+    // Constructor without DataSource argument
     public TripService(DataSource dataSource) {
-        this.dataSource = dataSource;
+        // No DataSource required as we're using DatabaseConnectionManager for connection management
+    }
+
+    // Retrieve all trips for public view
+    public List<Trip> getAllTrips() {
+        List<Trip> trips = new ArrayList<>();
+        String sql = "SELECT * FROM trips";
+        try (Connection conn = DatabaseConnectionManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                trips.add(createTripFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL Error in getAllTrips: " + e.getMessage());
+        }
+        return trips;
     }
 
     // Retrieve all trips for a specific host
     public List<Trip> getAllTripsForHost(int hostId) {
         List<Trip> trips = new ArrayList<>();
         String sql = "SELECT * FROM trips WHERE host_id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, hostId);
             ResultSet rs = stmt.executeQuery();
@@ -29,22 +45,6 @@ public class TripService {
             }
         } catch (SQLException e) {
             System.err.println("SQL Error in getAllTripsForHost: " + e.getMessage());
-        }
-        return trips;
-    }
-
-    // Retrieve all trips for public view
-    public List<Trip> getAllTrips() {
-        List<Trip> trips = new ArrayList<>();
-        String sql = "SELECT * FROM trips";
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                trips.add(createTripFromResultSet(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("SQL Error in getAllTrips: " + e.getMessage());
         }
         return trips;
     }
@@ -61,7 +61,7 @@ public class TripService {
     // Add a new trip
     private void addTrip(Trip trip) {
         String sql = "INSERT INTO trips (trip_name, destination, duration, price, activity_type, description, start_date, end_date, max_participants, photos, cancellation_policy, itinerary, inclusions, exclusions, difficulty_level, packing_list, booking_deadline, payment_terms, host_name, host_contact_email, host_contact_phone, host_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setTripParameters(stmt, trip);
             stmt.executeUpdate();
@@ -78,7 +78,7 @@ public class TripService {
     // Update an existing trip
     private void updateTrip(Trip trip) {
         String sql = "UPDATE trips SET trip_name = ?, destination = ?, duration = ?, price = ?, activity_type = ?, description = ?, start_date = ?, end_date = ?, max_participants = ?, photos = ?, cancellation_policy = ?, itinerary = ?, inclusions = ?, exclusions = ?, difficulty_level = ?, packing_list = ?, booking_deadline = ?, payment_terms = ?, host_name = ?, host_contact_email = ?, host_contact_phone = ? WHERE trip_id = ? AND host_id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             setTripParameters(stmt, trip);
             stmt.setInt(22, trip.getTripId());
@@ -92,7 +92,7 @@ public class TripService {
     // Delete a trip
     public void deleteTrip(int tripId, int hostId) {
         String sql = "DELETE FROM trips WHERE trip_id = ? AND host_id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, tripId);
             stmt.setInt(2, hostId);
@@ -106,7 +106,7 @@ public class TripService {
     public Trip getTripById(int tripId) {
         String sql = "SELECT * FROM trips WHERE trip_id = ?";
         Trip trip = null;
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, tripId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -124,9 +124,9 @@ public class TripService {
     public List<String> getDistinctActivityTypes() {
         List<String> types = new ArrayList<>();
         String sql = "SELECT DISTINCT activity_type FROM trips";
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            ResultSet rs = stmt.executeQuery();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 types.add(rs.getString("activity_type"));
             }
@@ -143,7 +143,7 @@ public class TripService {
                 "AND (duration <= ? OR ? IS NULL) " +
                 "AND (price <= ? OR ? IS NULL) " +
                 "AND (activity_type = ? OR ? IS NULL)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = DatabaseConnectionManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             // Set destination
             stmt.setString(1, "%" + destination + "%");

@@ -1,20 +1,13 @@
 package service;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import Model.Offer;
+import utils.DatabaseConnectionManager;
+
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
-import Model.Offer;
 
 public class OfferService {
-
-    private final DataSource dataSource;
-
-    public OfferService(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
 
     // Retrieve all active offers
     public List<Offer> getAllActiveOffers() throws Exception {
@@ -25,7 +18,7 @@ public class OfferService {
                 WHERE o.is_active = true
                 ORDER BY o.created_at DESC
                 """;
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
              ResultSet resultSet = statement.executeQuery()) {
             List<Offer> offers = new ArrayList<>();
@@ -46,7 +39,7 @@ public class OfferService {
                 ORDER BY o.created_at DESC
                 """;
         List<Offer> offers = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, hostId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -61,7 +54,7 @@ public class OfferService {
     // Add a new offer
     public void addOffer(Offer offer) throws Exception {
         String query = "INSERT INTO offers (trip_id, discounted_price, details, is_active, offerphotos, host_id) VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             setOfferParameters(statement, offer);
             statement.executeUpdate();
@@ -71,7 +64,7 @@ public class OfferService {
     // Update an existing offer
     public void updateOffer(Offer offer) throws Exception {
         String query = "UPDATE offers SET trip_id = ?, discounted_price = ?, details = ?, is_active = ?, offerphotos = ?, host_id = ? WHERE id = ?";
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             setOfferParameters(statement, offer);
             statement.setInt(7, offer.getId());
@@ -87,7 +80,7 @@ public class OfferService {
                 LEFT JOIN trips t ON o.trip_id = t.trip_id
                 WHERE o.id = ?
                 """;
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, offerId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -102,7 +95,7 @@ public class OfferService {
     // Delete an offer by ID and host ID
     public void deleteOffer(int offerId, int hostId) throws Exception {
         String query = "DELETE FROM offers WHERE id = ? AND host_id = ?";
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, offerId);
             statement.setInt(2, hostId);
@@ -128,7 +121,7 @@ public class OfferService {
                 WHERE o.trip_id = ?
                 """;
         List<Offer> offers = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = DatabaseConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, tripId);
             try (ResultSet resultSet = statement.executeQuery()) {
