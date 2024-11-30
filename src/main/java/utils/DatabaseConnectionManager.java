@@ -23,31 +23,34 @@ public class DatabaseConnectionManager {
                     .directory("/Users/pradhyumyadav/IdeaProjects/AlexTripAgencyManagementSystem/src/main/java/service")
                     .load();
 
+            // Get DATABASE_URL from the .env file
             String dbUrl = dotenv.get("DATABASE_URL");
             if (dbUrl == null || dbUrl.isEmpty()) {
                 throw new RuntimeException("DATABASE_URL not found in .env file.");
             }
 
+            // Parse the DATABASE_URL
             URI dbUri = new URI(dbUrl);
 
-            // Extract the username, password, and JDBC URL from the URI
+            // Extract username, password, and JDBC URL components
             String username = dbUri.getUserInfo().split(":")[0];
             String password = dbUri.getUserInfo().split(":")[1];
             String jdbcUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath() + "?sslmode=require";
 
-            // Configure the HikariDataSource
+            // Configure HikariCP (Connection Pooling)
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(jdbcUrl);
             config.setUsername(username);
             config.setPassword(password);
-            config.setMaximumPoolSize(10);
-            config.setMinimumIdle(2);
-            config.setIdleTimeout(30000);
-            config.setMaxLifetime(1800000);
-            config.addDataSourceProperty("ssl", "true");
+            config.setMaximumPoolSize(10); // Maximum connections in the pool
+            config.setMinimumIdle(2);     // Minimum idle connections in the pool
+            config.setIdleTimeout(30000); // 30 seconds before an idle connection is removed
+            config.setMaxLifetime(1800000); // Maximum lifetime of a connection (30 minutes)
+            config.setInitializationFailTimeout(0); // Allow the pool to start even if no DB connection is available
+            config.addDataSourceProperty("ssl", "true"); // Enforce SSL
             config.addDataSourceProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
-            config.setInitializationFailTimeout(0); // Allow pool to start even if initial connection fails
 
+            // Initialize the data source
             dataSource = new HikariDataSource(config);
 
         } catch (URISyntaxException | ClassNotFoundException e) {
@@ -56,7 +59,7 @@ public class DatabaseConnectionManager {
     }
 
     /**
-     * Returns a Connection object from the connection pool.
+     * Retrieves a connection from the connection pool.
      *
      * @return Connection object
      * @throws SQLException if a database access error occurs
@@ -66,7 +69,7 @@ public class DatabaseConnectionManager {
     }
 
     /**
-     * Returns the DataSource object for connection pooling.
+     * Retrieves the DataSource object for connection pooling.
      *
      * @return DataSource object
      */
