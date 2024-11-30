@@ -1,6 +1,5 @@
 package Servlet;
 
-import javax.naming.InitialContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -17,6 +16,7 @@ import Model.Offer;
 import Model.Trip;
 import service.OfferService;
 import service.TripService;
+import service.DatabaseConnectionManager;
 
 @WebServlet(name = "IndexController", urlPatterns = {"/index"})
 public class IndexController extends HttpServlet {
@@ -28,8 +28,8 @@ public class IndexController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            InitialContext initialContext = new InitialContext();
-            DataSource dataSource = (DataSource) initialContext.lookup("java:comp/env/jdbc/alextrip");
+            // Use DatabaseConnectionManager to get the DataSource
+            DataSource dataSource = DatabaseConnectionManager.getDataSource();
             tripService = new TripService(dataSource);
             offerService = new OfferService(dataSource);
             LOGGER.info("Services initialized successfully.");
@@ -69,5 +69,11 @@ public class IndexController extends HttpServlet {
             request.setAttribute("errorMessage", "Unable to process request. Please try again later.");
             request.getRequestDispatcher("/WEB-INF/views/errorPage.jsp").forward(request, response);
         }
+    }
+
+    @Override
+    public void destroy() {
+        DatabaseConnectionManager.closeDataSource();
+        LOGGER.info("DataSource closed.");
     }
 }
